@@ -1,0 +1,16 @@
+{
+    "name": "siyara-e-commerce",
+    "version": "1.0.0",
+    "description": "Full Stack MERN E-commerce Application",
+    "main": "server.js",
+    "scripts": {
+        "backend": "cd backend && npm run dev",
+        "frontend": "cd frontend && npm run dev",
+        "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
+        "install-all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+        "data:import": "cd backend && npm run data:import"
+    },
+    "devDependencies": {
+        "concurrently": "^8.2.2"
+    }
+}
