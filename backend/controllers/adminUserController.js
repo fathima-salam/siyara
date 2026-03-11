@@ -10,7 +10,8 @@ const isValidId = (id) => mongoose.Types.ObjectId.isValid(id) && String(new mong
  * @desc    Get all users (admin)
  */
 export const getAllUsers = asyncHandler(async (req, res) => {
-  const users = await User.find({}).select('-password').sort({ createdAt: -1 });
+  // Do not include admin accounts in the user listing
+  const users = await User.find({ isAdmin: false }).select('-password').sort({ createdAt: -1 });
   res.json(users);
 });
 
