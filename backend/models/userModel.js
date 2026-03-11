@@ -1,27 +1,47 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 
-const userSchema = new mongoose.Schema(
-    {
-        name: { type: String, required: true },
-        email: { type: String, required: true, unique: true },
-        password: { type: String, required: true },
-        isAdmin: { type: Boolean, default: false },
-    },
-    { timestamps: true }
+const addressSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true },
+    phone: { type: String, required: true },
+    house: { type: String, required: true },
+    city: { type: String, required: true },
+    state: { type: String, required: true },
+    pincode: { type: String, required: true },
+    country: { type: String, required: true },
+    isDefault: { type: Boolean, default: false },
+  },
+  { _id: true }
 );
 
-// Match user entered password to hashed password in database
+const userSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true, trim: true },
+    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    phone: { type: String, trim: true },
+    password: { type: String, required: true, select: false },
+    addresses: [addressSchema],
+    cartId: { type: mongoose.Schema.Types.ObjectId, ref: 'Cart', default: null },
+    wishlistId: { type: mongoose.Schema.Types.ObjectId, ref: 'Wishlist', default: null },
+    walletBalance: { type: Number, default: 0, min: 0 },
+    isAdmin: { type: Boolean, default: false },
+    isBlocked: { type: Boolean, default: false },
+  },
+  { timestamps: true }
+);
+
+// email already has unique: true (creates index). Only add index for phone.
+userSchema.index({ phone: 1 });
+
 userSchema.methods.matchPassword = async function (enteredPassword) {
-    return await bcrypt.compare(enteredPassword, this.password);
+  return await bcrypt.compare(enteredPassword, this.password);
 };
 
-// Hash password before saving
-userSchema.pre('save', async function (next) {
-    if (!this.isModified('password')) return next();
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
-    next();
+userSchema.pre('save', async function () {
+  if (!this.isModified('password')) return;
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
 });
 
 const User = mongoose.model('User', userSchema);

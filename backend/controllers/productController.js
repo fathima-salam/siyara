@@ -1,22 +1,32 @@
 import asyncHandler from '../middleware/asyncHandler.js';
 import Product from '../models/productModel.js';
 
-// @desc    Fetch all products
+// @desc    Fetch all products (from DB only; schema: productName, pricing, category, status, etc.)
 // @route   GET /api/products
 // @access  Public
 const getProducts = asyncHandler(async (req, res) => {
     const pageSize = Number(req.query.pageSize) || 12;
     const page = Number(req.query.pageNum) || 1;
-    const keyword = req.query.keyword ? { name: { $regex: req.query.keyword, $options: 'i' } } : {};
-    const category = req.query.category ? { category: req.query.category } : {};
-    const minPrice = req.query.minPrice ? { price: { $gte: Number(req.query.minPrice) } } : {};
-    const maxPrice = req.query.maxPrice ? { price: { $lte: Number(req.query.maxPrice) } } : {};
-    const filter = { ...keyword, ...category, ...minPrice, ...maxPrice };
+    const filter = {};
+    if (req.query.keyword) {
+        filter.$or = [
+            { productName: { $regex: req.query.keyword, $options: 'i' } },
+            { product: { $regex: req.query.keyword, $options: 'i' } },
+            { description: { $regex: req.query.keyword, $options: 'i' } },
+        ];
+    }
+    if (req.query.category) filter.category = req.query.category;
+    const minPrice = req.query.minPrice ? Number(req.query.minPrice) : null;
+    const maxPrice = req.query.maxPrice ? Number(req.query.maxPrice) : null;
+    if (minPrice != null || maxPrice != null) {
+        filter['pricing.sellingPrice'] = {};
+        if (minPrice != null) filter['pricing.sellingPrice'].$gte = minPrice;
+        if (maxPrice != null) filter['pricing.sellingPrice'].$lte = maxPrice;
+    }
 
-    let sort = {};
-    if (req.query.sort === 'price_asc') sort = { price: 1 };
-    else if (req.query.sort === 'price_desc') sort = { price: -1 };
-    else sort = { createdAt: -1 };
+    let sort = { createdAt: -1 };
+    if (req.query.sort === 'price_asc') sort = { 'pricing.sellingPrice': 1 };
+    else if (req.query.sort === 'price_desc') sort = { 'pricing.sellingPrice': -1 };
 
     const count = await Product.countDocuments(filter);
     const products = await Product.find(filter)
@@ -26,11 +36,13 @@ const getProducts = asyncHandler(async (req, res) => {
     res.json({ products, page, pages: Math.ceil(count / pageSize), total: count });
 });
 
-// @desc    Fetch featured products
+// @desc    Fetch featured products (from DB only; active products, limit 8)
 // @route   GET /api/products/featured
 // @access  Public
 const getFeaturedProducts = asyncHandler(async (req, res) => {
-    const products = await Product.find({ isFeatured: true }).limit(8);
+    const products = await Product.find({ status: 'active' })
+        .sort({ createdAt: -1 })
+        .limit(8);
     res.json(products);
 });
 

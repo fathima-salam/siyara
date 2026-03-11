@@ -1,39 +1,55 @@
 import mongoose from 'mongoose';
 
-const reviewSchema = new mongoose.Schema(
-    {
-        user: { type: mongoose.Schema.Types.ObjectId, required: true, ref: 'User' },
-        name: { type: String, required: true },
-        rating: { type: Number, required: true },
-        comment: { type: String, required: true },
-    },
-    { timestamps: true }
+// Each variant = one color; quantity, sku, and images are per variant (e.g. different images per color).
+const variantSchema = new mongoose.Schema(
+  {
+    color: { type: String, required: true, trim: true },
+    quantity: { type: Number, required: true, min: 0, default: 0 },
+    sku: { type: String, trim: true, sparse: true },
+    images: [{ type: String, trim: true }],
+  },
+  { _id: true }
+);
+
+const pricingSchema = new mongoose.Schema(
+  {
+    buyingPrice: { type: Number, required: true, min: 0 },
+    sellingPrice: { type: Number, required: true, min: 0 },
+    offerPrice: { type: Number, min: 0 },
+  },
+  { _id: false }
 );
 
 const productSchema = new mongoose.Schema(
-    {
-        user: { type: mongoose.Schema.Types.ObjectId, required: true, ref: 'User' },
-        name: { type: String, required: true },
-        images: [{ type: String }],
-        brand: { type: String, required: true },
-        category: {
-            type: String,
-            required: true,
-            enum: ['Men', 'Women', 'Casual', 'Formal', 'Accessories', 'Bags', 'Jackets'],
-        },
-        description: { type: String, required: true },
-        reviews: [reviewSchema],
-        rating: { type: Number, required: true, default: 0 },
-        numReviews: { type: Number, required: true, default: 0 },
-        price: { type: Number, required: true, default: 0 },
-        countInStock: { type: Number, required: true, default: 0 },
-        sizes: [{ type: String }],
-        colors: [{ type: String }],
-        isNew: { type: Boolean, default: false },
-        isFeatured: { type: Boolean, default: false },
+  {
+    productId: { type: String, required: true, unique: true, trim: true },
+    product: { type: String, required: true, trim: true },
+    productName: { type: String, required: true, trim: true },
+    category: { type: String, required: true, trim: true },
+    brand: { type: String, required: true, trim: true },
+    description: { type: String, default: '' },
+    pricing: { type: pricingSchema, required: true },
+    variants: [variantSchema],
+    thumbnails: [{ type: String, trim: true }],
+    totalStock: { type: Number, default: 0, min: 0 },
+    status: {
+      type: String,
+      enum: ['active', 'out_of_stock', 'draft'],
+      default: 'draft',
     },
-    { timestamps: true }
+  },
+  { timestamps: true }
 );
+
+// productId already has unique: true (creates index).
+productSchema.index({ product: 1, category: 1 });
+productSchema.index({ status: 1 });
+
+productSchema.pre('save', function () {
+  if (this.variants && this.variants.length > 0) {
+    this.totalStock = this.variants.reduce((sum, v) => sum + (v.quantity || 0), 0);
+  }
+});
 
 const Product = mongoose.model('Product', productSchema);
 export default Product;
