@@ -36,13 +36,14 @@ const getProducts = asyncHandler(async (req, res) => {
     res.json({ products, page, pages: Math.ceil(count / pageSize), total: count });
 });
 
-// @desc    Fetch featured products (from DB only; active products, limit 8)
+// @desc    Fetch featured products for home page (latest 4 from DB; any status so listing shows available products)
 // @route   GET /api/products/featured
 // @access  Public
 const getFeaturedProducts = asyncHandler(async (req, res) => {
-    const products = await Product.find({ status: 'active' })
+    const limit = Math.min(Number(req.query.limit) || 4, 12);
+    const products = await Product.find({})
         .sort({ createdAt: -1 })
-        .limit(8);
+        .limit(limit);
     res.json(products);
 });
 
