@@ -263,3 +263,105 @@ export const deleteProduct = asyncHandler(async (req, res) => {
   await Product.findByIdAndDelete(req.params.id);
   res.json({ message: 'Product removed' });
 });
+
+/**
+ * @route   PATCH /api/admin/products/bulk-update
+ * @desc    Bulk update products (pricing, status, variant qty & sku)
+ */
+export const bulkUpdateProducts = asyncHandler(async (req, res) => {
+  const { products } = req.body || {};
+
+  if (!Array.isArray(products) || products.length === 0) {
+    res.status(400);
+    throw new Error('No products provided for bulk update');
+  }
+
+  let updatedCount = 0;
+
+  for (const update of products) {
+    const { productId, pricing, status, variants } = update || {};
+
+    if (!productId) {
+      res.status(400);
+      throw new Error('Each bulk update item must include productId');
+    }
+
+    const product = await Product.findOne({ productId: String(productId).trim() });
+    if (!product) {
+      res.status(404);
+      throw new Error(`Product with productId "${productId}" not found`);
+    }
+
+    // Update pricing
+    if (pricing) {
+      const { buyingPrice, sellingPrice, offerPrice } = pricing;
+      if (buyingPrice !== undefined) {
+        const val = Number(buyingPrice);
+        if (Number.isNaN(val) || val < 0) {
+          res.status(400);
+          throw new Error(`Invalid buyingPrice for productId "${productId}"`);
+        }
+        product.pricing.buyingPrice = val;
+      }
+      if (sellingPrice !== undefined) {
+        const val = Number(sellingPrice);
+        if (Number.isNaN(val) || val < 0) {
+          res.status(400);
+          throw new Error(`Invalid sellingPrice for productId "${productId}"`);
+        }
+        product.pricing.sellingPrice = val;
+      }
+      if (offerPrice !== undefined) {
+        const val = Number(offerPrice);
+        if (Number.isNaN(val) || val < 0) {
+          res.status(400);
+          throw new Error(`Invalid offerPrice for productId "${productId}"`);
+        }
+        product.pricing.offerPrice = val;
+      }
+    }
+
+    // Update status
+    if (status !== undefined) {
+      if (!PRODUCT_STATUSES.includes(status)) {
+        res.status(400);
+        throw new Error(`Invalid status "${status}" for productId "${productId}"`);
+      }
+      product.status = status;
+    }
+
+    // Update variants (by color)
+    if (Array.isArray(variants)) {
+      for (const v of variants) {
+        const { color, quantity, sku } = v || {};
+        if (!color) {
+          res.status(400);
+          throw new Error(`Variant color is required for productId "${productId}"`);
+        }
+        const variant = product.variants.find(
+          (vv) => vv.color && String(vv.color).toLowerCase() === String(color).trim().toLowerCase()
+        );
+        if (!variant) {
+          res.status(400);
+          throw new Error(`Variant with color "${color}" not found for productId "${productId}"`);
+        }
+        if (quantity !== undefined) {
+          const q = Number(quantity);
+          if (Number.isNaN(q) || q < 0) {
+            res.status(400);
+            throw new Error(`Invalid quantity for color "${color}" on productId "${productId}"`);
+          }
+          variant.quantity = q;
+        }
+        if (sku !== undefined) {
+          variant.sku = sku == null ? undefined : String(sku).trim();
+        }
+      }
+    }
+
+    await product.save(); // pre-save hook keeps totalStock in sync
+    updatedCount += 1;
+  }
+
+  res.json({ message: 'Bulk update successful', updatedCount });
+});

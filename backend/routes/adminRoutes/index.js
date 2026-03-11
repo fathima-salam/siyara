@@ -17,6 +17,7 @@ import {
   updateStock,
   updateVariant,
   deleteProduct,
+  bulkUpdateProducts,
 } from '../../controllers/adminProductController.js';
 import {
   getAllOrders,
@@ -61,8 +62,9 @@ router.post('/upload/image', uploadProductImageMiddleware, uploadProductImageHan
 
 // ---------- Products ----------
 router.get('/products', getAllProducts);
-router.get('/products/:id', getProductById);
 router.post('/products', addProduct);
+router.patch('/products/bulk-update', bulkUpdateProducts);
+router.get('/products/:id', getProductById);
 router.put('/products/:id', editProduct);
 router.patch('/products/:id/pricing', updateProductPricing);
 router.patch('/products/:id/stock', updateStock);
