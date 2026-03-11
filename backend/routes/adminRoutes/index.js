@@ -30,6 +30,18 @@ import {
   issueRefund,
   getWalletTransactions,
 } from '../../controllers/adminWalletController.js';
+import {
+  getBrands,
+  createBrand,
+  updateBrand,
+  deleteBrand,
+} from '../../controllers/adminBrandController.js';
+import {
+  getCategories,
+  createCategory,
+  updateCategory,
+  deleteCategory,
+} from '../../controllers/adminCategoryController.js';
 import { uploadProductImage as uploadProductImageHandler } from '../../controllers/uploadController.js';
 import { uploadProductImage as uploadProductImageMiddleware } from '../../middleware/uploadMiddleware.js';
 
@@ -68,5 +80,17 @@ router.patch('/orders/:id/return', handleReturnRequest);
 router.post('/wallet/refund', issueRefund);
 router.get('/wallet/:userId/transactions', getWalletTransactions);
 router.get('/wallet/:userId', getWalletByUserId);
+
+// ---------- Brands ----------
+router.get('/brands', getBrands);
+router.post('/brands', createBrand);
+router.put('/brands/:id', updateBrand);
+router.delete('/brands/:id', deleteBrand);
+
+// ---------- Categories ----------
+router.get('/categories', getCategories);
+router.post('/categories', createCategory);
+router.put('/categories/:id', updateCategory);
+router.delete('/categories/:id', deleteCategory);
 
 export default router;
