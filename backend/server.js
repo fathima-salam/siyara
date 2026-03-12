@@ -19,11 +19,32 @@ connectDB();
 
 const app = express();
 
-// CORS — allow requests from Next.js frontend
-app.use(cors({
-    origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
-    credentials: true
-}));
+// CORS — allow requests from Next.js frontend (any localhost port in dev, explicit in prod)
+const corsOptions = {
+    origin: (origin, callback) => {
+        const allowed = [
+            'http://localhost:3000',
+            'http://127.0.0.1:3000',
+            'http://localhost:3001',
+            'http://127.0.0.1:3001',
+        ];
+        // Allow requests with no origin (e.g. same-origin, Postman) or from allowed list
+        if (!origin || allowed.includes(origin)) {
+            callback(null, true);
+            return;
+        }
+        // In development, allow any localhost / 127.0.0.1 on any port
+        if (process.env.NODE_ENV !== 'production' && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+            callback(null, true);
+            return;
+        }
+        callback(new Error('Not allowed by CORS'));
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+};
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
