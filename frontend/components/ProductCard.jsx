@@ -2,12 +2,17 @@
 
 import SafeImage from "./SafeImage";
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { ShoppingBag } from "lucide-react";
 import { motion } from "framer-motion";
 import { useCartStore } from "@/store/useCartStore";
+import { useAuthStore } from "@/store/useAuthStore";
 
 export default function ProductCard({ product }) {
     const { addItem } = useCartStore();
+    const userInfo = useAuthStore((s) => s.userInfo);
+    const router = useRouter();
+    const pathname = usePathname();
 
     const price = product.pricing?.offerPrice ?? product.pricing?.sellingPrice ?? product.price ?? 0;
     const imageSrc = product.thumbnails?.[0] || product.variants?.[0]?.images?.[0] || product.images?.[0];
@@ -16,10 +21,15 @@ export default function ProductCard({ product }) {
     const addToCartHandler = (e) => {
         e.preventDefault();
         e.stopPropagation();
+        if (!userInfo?.token) {
+            const redirect = `/login?redirect=${encodeURIComponent(pathname || "/shop")}`;
+            router.push(redirect);
+            return;
+        }
         addItem({
             ...product,
             qty: 1,
-            size: product.sizes?.[0] || "M",
+            size: product.sizes?.[0] || "",
             color: product.variants?.[0]?.color || product.colors?.[0] || "Black"
         });
     };
@@ -67,7 +77,7 @@ export default function ProductCard({ product }) {
                     </h3>
                 </Link>
                 <p className="mt-2 text-sm font-medium">
-                    ${Number(price).toFixed(2)}
+                    ₹{Number(price).toFixed(2)}
                 </p>
             </div>
         </motion.div>

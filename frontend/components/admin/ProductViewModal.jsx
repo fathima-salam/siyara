@@ -72,15 +72,15 @@ export default function ProductViewModal({ isOpen, onClose, product }) {
               <div className="space-y-2">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500">Pricing</h3>
                 <p className="text-sm font-bold text-primary">
-                  ${Number(product.pricing?.sellingPrice ?? product.pricing?.offerPrice ?? 0).toFixed(2)}
+                  ₹{Number(product.pricing?.sellingPrice ?? product.pricing?.offerPrice ?? 0).toFixed(2)}
                 </p>
                 {product.pricing?.offerPrice != null && (
                   <p className="text-[11px] text-emerald-600 font-medium">
-                    Offer: ${Number(product.pricing.offerPrice).toFixed(2)}
+                    Offer: ₹{Number(product.pricing.offerPrice).toFixed(2)}
                   </p>
                 )}
                 <p className="text-[11px] text-gray-500">
-                  Buying: ${Number(product.pricing?.buyingPrice ?? 0).toFixed(2)}
+                  Buying: ₹{Number(product.pricing?.buyingPrice ?? 0).toFixed(2)}
                 </p>
                 <p className="text-[11px] text-gray-500">
                   Total stock: {product.totalStock ?? 0}

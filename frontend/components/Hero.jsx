@@ -15,44 +15,32 @@ export default function Hero() {
             </div>
 
             <div className="container mx-auto px-6 relative z-10 text-center text-white">
-                <motion.p
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.8, delay: 0.2 }}
-                    className="text-xs md:text-sm font-bold uppercase tracking-[0.4em] mb-6"
-                >
-                    Modest Fashion
-                </motion.p>
-
                 <motion.h1
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.8, delay: 0.4 }}
-                    className="text-4xl md:text-7xl lg:text-8xl font-bold uppercase tracking-tighter leading-none mb-10"
+                    className="text-5xl md:text-8xl lg:text-[7rem] font-bold tracking-tight leading-none mb-8"
                 >
-                    Hijabs & scarves <br /> for every style
+                    Siyara
                 </motion.h1>
 
                 <motion.p
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.8, delay: 0.6 }}
-                    className="max-w-xl mx-auto text-sm md:text-base text-white/80 leading-relaxed mb-12"
+                    className="max-w-md mx-auto text-sm md:text-base text-white/90 leading-relaxed mb-10"
                 >
-                    Discover premium hijabs, scarves and modest wear—carefully selected for quality, comfort and timeless elegance.
+                    Elegance and modesty in every hijab.
                 </motion.p>
 
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.8, delay: 0.8 }}
-                    className="flex flex-col sm:flex-row items-center justify-center gap-4"
+                    className="flex items-center justify-center"
                 >
                     <Link href="/shop" className="btn-primary bg-white text-primary border-white">
-                        Shop Hijabs
-                    </Link>
-                    <Link href="/about" className="btn-outline border-white text-white hover:bg-white hover:text-primary">
-                        Our Story
+                        Shop Now
                     </Link>
                 </motion.div>
             </div>

@@ -151,7 +151,15 @@ export default function ProfilePage() {
                                     </div>
                                 ) : (
                                     <div className="space-y-6">
-                                        {orders.map((order) => (
+                                        {orders.map((order) => {
+                                            const orderItems = order.orderItems ?? (order.items ?? []).map((it) => ({
+                                                name: it.productId?.productName ?? it.productId?.product ?? "Product",
+                                                image: it.productId?.thumbnails?.[0] ?? it.productId?.variants?.[0]?.images?.[0],
+                                            }));
+                                            const orderTotal = order.totalPrice ?? order.finalPrice ?? 0;
+                                            const orderDate = order.createdAt ?? order.orderDate;
+                                            const isPaid = order.isPaid ?? order.transactionDetails?.paymentStatus === "paid";
+                                            return (
                                             <motion.div
                                                 key={order._id}
                                                 initial={{ opacity: 0, y: 10 }}
@@ -160,31 +168,31 @@ export default function ProfilePage() {
                                             >
                                                 <div className="flex-1 min-w-0">
                                                     <div className="flex items-center space-x-3 mb-4">
-                                                        <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">#{order._id.substring(order._id.length - 8)}</span>
+                                                        <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">#{order._id?.slice(-8) ?? ""}</span>
                                                         <span className="text-[10px] uppercase font-bold text-gray-300">•</span>
-                                                        <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">{new Date(order.createdAt).toLocaleDateString()}</span>
+                                                        <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">{orderDate ? new Date(orderDate).toLocaleDateString() : ""}</span>
                                                     </div>
                                                     <div className="flex -space-x-3 mb-4 overflow-hidden">
-                                                        {order.orderItems.slice(0, 3).map((item, idx) => (
+                                                        {(orderItems ?? []).slice(0, 3).map((item, idx) => (
                                                             <div key={idx} className="relative w-12 h-16 border-2 border-white bg-gray-100 overflow-hidden">
                                                                 <SafeImage src={item.image} alt={item.name} fill className="object-cover" />
                                                             </div>
                                                         ))}
-                                                        {order.orderItems.length > 3 && (
+                                                        {(orderItems ?? []).length > 3 && (
                                                             <div className="w-12 h-16 border-2 border-white bg-gray-50 flex items-center justify-center text-[10px] font-bold text-gray-400">
-                                                                +{order.orderItems.length - 3}
+                                                                +{(orderItems ?? []).length - 3}
                                                             </div>
                                                         )}
                                                     </div>
                                                     <p className="text-xs text-gray-600 truncate max-w-sm">
-                                                        {order.orderItems.map(item => item.name).join(", ")}
+                                                        {(orderItems ?? []).map((item) => item.name).join(", ")}
                                                     </p>
                                                 </div>
 
                                                 <div className="flex flex-col md:items-end gap-3 w-full md:w-auto">
-                                                    <div className="text-lg font-bold uppercase tracking-tight">${order.totalPrice.toFixed(2)}</div>
+                                                    <div className="text-lg font-bold uppercase tracking-tight">₹{Number(orderTotal).toFixed(2)}</div>
                                                     <div className="flex items-center space-x-4">
-                                                        {order.isPaid ? (
+                                                        {isPaid ? (
                                                             <div className="flex items-center space-x-1 text-emerald-600">
                                                                 <CheckCircle className="w-3 h-3" />
                                                                 <span className="text-[10px] font-bold uppercase tracking-widest">Paid</span>
@@ -204,7 +212,8 @@ export default function ProfilePage() {
                                                     </div>
                                                 </div>
                                             </motion.div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 )
                             ) : (

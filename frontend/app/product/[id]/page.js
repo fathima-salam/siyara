@@ -17,19 +17,21 @@ import {
     RotateCcw,
 } from "lucide-react";
 import { useCartStore } from "@/store/useCartStore";
+import { useAuthStore } from "@/store/useAuthStore";
 import { productService } from "@/api";
-
-const DEFAULT_SIZES = ["S", "M", "L", "XL", "XXL", "XXXL"];
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function ProductDetailPage() {
     const params = useParams();
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [selectedSize, setSelectedSize] = useState("M");
     const [selectedColor, setSelectedColor] = useState("");
     const [quantity, setQuantity] = useState(1);
     const [mainImageIndex, setMainImageIndex] = useState(0);
     const addItem = useCartStore((state) => state.addItem);
+    const userInfo = useAuthStore((s) => s.userInfo);
+    const router = useRouter();
 
     useEffect(() => {
         const fetchProduct = async () => {
@@ -81,12 +83,26 @@ export default function ProductDetailPage() {
 
     const sku = selectedVariant?.sku || product?.productId || "";
 
+    const cartItems = useCartStore((s) => s.cartItems);
+    const isInCart = cartItems.some(
+        (x) => x._id === product?._id && (x.size || "") === "" && (x.color || "") === (selectedColor || "")
+    );
+
     const handleAddToCart = () => {
-        addItem({ ...product, size: selectedSize, color: selectedColor, qty: quantity });
+        if (!userInfo?.token) {
+            router.push(`/login?redirect=${encodeURIComponent(`/product/${params?.id || product?._id}`)}`);
+            return;
+        }
+        addItem({
+            ...product,
+            size: "",
+            color: selectedColor,
+            qty: quantity,
+            image: selectedVariant?.images?.[0] || product?.thumbnails?.[0],
+        });
     };
 
     const inStock = (product?.totalStock ?? selectedVariant?.quantity ?? 0) > 0;
-    const sizes = product?.sizes?.length ? product.sizes : DEFAULT_SIZES;
 
     if (loading)
         return (
@@ -112,8 +128,8 @@ export default function ProductDetailPage() {
                 <div className="container mx-auto px-4 sm:px-6 max-w-5xl">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10">
                         {/* Left: Gallery with main image + arrows + thumbnails */}
-                        <div className="space-y-3 lg:max-w-sm">
-                            <div className="relative aspect-[3/4] max-h-[340px] lg:max-h-[380px] overflow-hidden bg-gray-100 rounded-lg">
+                        <div className="space-y-3 lg:max-w-md">
+                            <div className="relative aspect-[3/4] max-h-[420px] lg:max-h-[520px] overflow-hidden bg-gray-100 rounded-lg">
                                 {currentImage && (
                                     <SafeImage
                                         src={currentImage}
@@ -208,11 +224,11 @@ export default function ProductDetailPage() {
 
                             <div className="flex items-baseline gap-2 mb-4">
                                 <span className="text-xl font-bold text-gray-900">
-                                    ${displayPrice}
+                                    ₹{displayPrice}
                                 </span>
                                 {originalPrice && (
                                     <span className="text-base text-gray-400 line-through">
-                                        ${originalPrice}
+                                        ₹{originalPrice}
                                     </span>
                                 )}
                             </div>
@@ -253,35 +269,6 @@ export default function ProductDetailPage() {
                                 </div>
                             )}
 
-                            {/* Size */}
-                            <div className="mb-4">
-                                <p className="text-[10px] font-semibold text-gray-700 uppercase tracking-wider mb-1.5">
-                                    Size: {selectedSize}
-                                </p>
-                                <div className="flex gap-1.5 flex-wrap">
-                                    {sizes.map((size) => (
-                                        <button
-                                            key={size}
-                                            type="button"
-                                            onClick={() => setSelectedSize(size)}
-                                            className={`min-w-[36px] h-8 px-2 rounded text-xs font-semibold uppercase tracking-wide border transition ${
-                                                selectedSize === size
-                                                    ? "bg-primary text-white border-primary"
-                                                    : "bg-white text-gray-700 border-gray-300 hover:border-primary"
-                                            }`}
-                                        >
-                                            {size}
-                                        </button>
-                                    ))}
-                                </div>
-                                <a
-                                    href="#"
-                                    className="text-[10px] text-primary hover:underline mt-0.5 inline-block"
-                                >
-                                    View Size Guide
-                                </a>
-                            </div>
-
                             {/* In Stock */}
                             <div className="mb-4">
                                 <span
@@ -316,14 +303,23 @@ export default function ProductDetailPage() {
                                         <Plus className="w-3 h-3" />
                                     </button>
                                 </div>
-                                <button
-                                    type="button"
-                                    onClick={handleAddToCart}
-                                    disabled={!inStock}
-                                    className="h-9 px-4 rounded text-sm bg-primary text-white font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                                >
-                                    Add To Cart
-                                </button>
+                                {isInCart ? (
+                                    <Link
+                                        href="/cart"
+                                        className="h-9 px-4 rounded text-sm bg-primary text-white font-semibold hover:opacity-90 flex items-center justify-center transition"
+                                    >
+                                        Go to Cart
+                                    </Link>
+                                ) : (
+                                    <button
+                                        type="button"
+                                        onClick={handleAddToCart}
+                                        disabled={!inStock}
+                                        className="h-9 px-4 rounded text-sm bg-primary text-white font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                                    >
+                                        Add To Cart
+                                    </button>
+                                )}
                                 <button
                                     type="button"
                                     className="h-9 px-4 rounded text-sm bg-amber-400 text-gray-900 font-semibold hover:bg-amber-500 transition"
@@ -389,7 +385,7 @@ export default function ProductDetailPage() {
                             <div className="mt-6 pt-6 border-t border-gray-200 space-y-2">
                                 <div className="flex items-center gap-2 text-xs text-gray-600">
                                     <Truck className="w-4 h-4 text-primary shrink-0" />
-                                    <span>Free shipping on orders over $150</span>
+                                    <span>Free shipping on orders over ₹150</span>
                                 </div>
                                 <div className="flex items-center gap-2 text-xs text-gray-600">
                                     <RotateCcw className="w-4 h-4 text-primary shrink-0" />

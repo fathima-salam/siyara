@@ -1,21 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useCartStore } from "@/store/useCartStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useRouter } from "next/navigation";
-import { ShieldCheck, CreditCard, Truck, Check, Loader2 } from "lucide-react";
+import { ShieldCheck, CreditCard, Truck, Check, Loader2, Banknote, Smartphone } from "lucide-react";
 import { motion } from "framer-motion";
 import SafeImage from "@/components/SafeImage";
+import Link from "next/link";
 import { orderService } from "@/api";
+
+const PAYMENT_OPTIONS = [
+    { id: "cod", label: "Cash on Delivery", description: "Pay when your order is delivered", icon: Banknote },
+    { id: "razorpay", label: "Razorpay", description: "Pay securely with card, UPI, or wallet", icon: Smartphone },
+];
 
 export default function CheckoutPage() {
     const [step, setStep] = useState(1);
-    const { cartItems, shippingAddress, saveShippingAddress } = useCartStore();
+    const { cartItems, shippingAddress, saveShippingAddress, paymentMethod, savePaymentMethod, clearCart } = useCartStore();
     const { userInfo } = useAuthStore();
     const router = useRouter();
+
+    useEffect(() => {
+        if (!userInfo) router.replace("/login?redirect=/checkout");
+        if (userInfo && cartItems.length === 0) router.replace("/cart");
+    }, [userInfo, router, cartItems.length]);
 
     const [formData, setFormData] = useState({
         address: shippingAddress.address || "",
@@ -34,28 +45,35 @@ export default function CheckoutPage() {
         setStep(step + 1);
     };
 
+    const subtotal = cartItems.reduce((acc, item) => acc + (Number(item.price) || 0) * (item.qty || 1), 0);
+    const shippingPrice = subtotal > 150 ? 0 : 15;
+    const totalPrice = subtotal + shippingPrice;
+
     const handlePlaceOrder = async () => {
+        if (!userInfo?.token) {
+            router.push("/login?redirect=/checkout");
+            return;
+        }
         setLoading(true);
         try {
             const orderData = {
-                orderItems: cartItems.map(item => ({
-                    name: item.name,
-                    qty: item.qty,
-                    image: item.images?.[0],
-                    price: item.price,
+                orderItems: cartItems.map((item) => ({
+                    name: item.name || item.productName,
+                    qty: item.qty || 1,
+                    image: item.image || item.thumbnails?.[0] || item.variants?.[0]?.images?.[0],
+                    price: Number(item.price) || 0,
                     product: item._id,
                     size: item.size,
-                    color: item.color,
+                    color: item.color || "",
                 })),
                 shippingAddress: formData,
-                paymentMethod: "Stripe",
-                itemsPrice: subtotal,
-                shippingPrice: subtotal > 150 ? 0 : 15,
-                taxPrice: 0,
-                totalPrice: subtotal > 150 ? subtotal : subtotal + 15,
+                paymentMethod: paymentMethod || "cod",
+                shippingPrice: totalPrice - subtotal,
+                totalPrice,
             };
 
             const data = await orderService.create(orderData);
+            clearCart();
             router.push(`/order/${data._id}`);
         } catch (error) {
             console.error("Error placing order:", error);
@@ -63,8 +81,6 @@ export default function CheckoutPage() {
             setLoading(false);
         }
     };
-
-    const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.qty, 0);
 
     return (
         <main className="min-h-screen bg-[#fcfcfc]">
@@ -148,22 +164,37 @@ export default function CheckoutPage() {
                                         <CreditCard className="w-6 h-6" />
                                         <span>Payment Method</span>
                                     </h2>
-                                    <div className="bg-white p-8 shadow-sm space-y-8">
-                                        <div className="p-6 border-2 border-primary bg-primary/5 flex items-center justify-between">
-                                            <div className="flex items-center space-x-4">
-                                                <div className="w-5 h-5 rounded-full border-4 border-primary" />
-                                                <span className="text-sm font-bold uppercase tracking-widest">Stripe / Credit Card</span>
-                                            </div>
-                                            <img src="/stripe-logo.png" alt="Stripe" className="h-6" />
-                                        </div>
+                                    <div className="bg-white p-8 shadow-sm space-y-6">
+                                        {PAYMENT_OPTIONS.map((opt) => {
+                                            const Icon = opt.icon;
+                                            const isSelected = paymentMethod === opt.id;
+                                            return (
+                                                <button
+                                                    key={opt.id}
+                                                    type="button"
+                                                    onClick={() => savePaymentMethod(opt.id)}
+                                                    className={`w-full p-6 border-2 rounded-lg flex items-center justify-between text-left transition-all ${isSelected ? "border-primary bg-primary/5" : "border-gray-200 hover:border-gray-300"}`}
+                                                >
+                                                    <div className="flex items-center space-x-4">
+                                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${isSelected ? "border-primary bg-primary" : "border-gray-300"}`}>
+                                                            {isSelected && <Check className="w-3 h-3 text-white" />}
+                                                        </div>
+                                                        <Icon className="w-5 h-5 text-gray-600" />
+                                                        <div>
+                                                            <span className="text-sm font-bold uppercase tracking-widest block">{opt.label}</span>
+                                                            <span className="text-xs text-gray-500">{opt.description}</span>
+                                                        </div>
+                                                    </div>
+                                                    {opt.id === "razorpay" && (
+                                                        <span className="text-[10px] uppercase tracking-widest text-gray-400 font-bold">Option available</span>
+                                                    )}
+                                                </button>
+                                            );
+                                        })}
 
-                                        <p className="text-xs text-gray-500 italic">
-                                            Stripe integration placeholder. You will enter your card details on the next step.
-                                        </p>
-
-                                        <div className="flex space-x-4">
-                                            <button onClick={() => setStep(1)} className="btn-outline flex-1">Back</button>
-                                            <button onClick={() => setStep(3)} className="btn-primary flex-1">Review Order</button>
+                                        <div className="flex space-x-4 pt-4">
+                                            <button type="button" onClick={() => setStep(1)} className="btn-outline flex-1">Back</button>
+                                            <button type="button" onClick={() => setStep(3)} className="btn-primary flex-1">Review Order</button>
                                         </div>
                                     </div>
                                 </motion.div>
@@ -185,17 +216,19 @@ export default function CheckoutPage() {
                                             </div>
                                             <div>
                                                 <h3 className="text-[10px] uppercase tracking-widest font-bold text-gray-400 mb-4">Payment Method</h3>
-                                                <p className="text-sm font-bold">Credit Card (Stripe)</p>
+                                                <p className="text-sm font-bold">
+                                                    {paymentMethod === "razorpay" ? "Razorpay" : "Cash on Delivery"}
+                                                </p>
                                             </div>
                                         </div>
 
                                         <div>
                                             <h3 className="text-[10px] uppercase tracking-widest font-bold text-gray-400 mb-6">Order Items</h3>
                                             <div className="space-y-4">
-                                                {cartItems.map((item) => (
-                                                    <div key={`${item._id}-${item.size}`} className="flex justify-between items-center text-sm">
-                                                        <span className="text-gray-600 truncate mr-10">{item.qty}x {item.name} ({item.size})</span>
-                                                        <span className="font-bold">${(item.price * item.qty).toFixed(2)}</span>
+                                                {cartItems.map((item, idx) => (
+                                                    <div key={`${item._id}-${item.size ?? ""}-${item.color ?? ""}-${idx}`} className="flex justify-between items-center text-sm">
+                                                        <span className="text-gray-600 truncate mr-10">{item.qty}x {item.name || item.productName}{item.color ? ` · ${item.color}` : ""}</span>
+                                                        <span className="font-bold">₹{(item.price * item.qty).toFixed(2)}</span>
                                                     </div>
                                                 ))}
                                             </div>
@@ -207,7 +240,7 @@ export default function CheckoutPage() {
                                             className="btn-primary w-full h-16 text-lg flex items-center justify-center space-x-2"
                                         >
                                             {loading && <Loader2 className="w-5 h-5 animate-spin" />}
-                                            <span>{loading ? "Processing..." : "Place Order & Pay"}</span>
+                                            <span>{loading ? "Processing..." : paymentMethod === "cod" ? "Place Order" : "Place Order (Razorpay)"}</span>
                                         </button>
                                     </div>
                                 </motion.div>
@@ -219,15 +252,15 @@ export default function CheckoutPage() {
                             <div className="bg-white p-8 shadow-sm">
                                 <h3 className="text-sm font-bold uppercase tracking-widest border-b border-gray-100 pb-4 mb-6">In Your Bag</h3>
                                 <div className="space-y-4 mb-8">
-                                    {cartItems.map(item => (
-                                        <div key={item._id} className="flex space-x-4">
-                                            <div className="relative w-16 h-20 bg-gray-50">
-                                                <SafeImage src={item.images?.[0]} alt={item.name} fill className="object-cover" />
+                                    {cartItems.map((item, index) => (
+                                        <div key={`${item._id}-${item.size ?? ""}-${item.color ?? ""}-${index}`} className="flex space-x-4">
+                                            <div className="relative w-20 h-24 bg-gray-50 rounded overflow-hidden flex-shrink-0">
+                                                <SafeImage src={item.image || item.thumbnails?.[0] || item.variants?.[0]?.images?.[0] || item.images?.[0]} alt={item.name || item.productName} fill className="object-cover" />
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <p className="text-[10px] font-bold uppercase truncate">{item.name}</p>
-                                                <p className="text-[10px] text-gray-400 font-bold uppercase">{item.size} / {item.qty} qty</p>
-                                                <p className="text-xs font-bold mt-1">${(item.price * item.qty).toFixed(2)}</p>
+                                                <p className="text-[10px] text-gray-400 font-bold uppercase">{item.qty} qty{item.color ? ` · ${item.color}` : ""}</p>
+                                                <p className="text-xs font-bold mt-1">₹{(item.price * item.qty).toFixed(2)}</p>
                                             </div>
                                         </div>
                                     ))}
@@ -235,11 +268,11 @@ export default function CheckoutPage() {
                                 <div className="border-t border-gray-100 pt-6 space-y-4">
                                     <div className="flex justify-between text-xs font-bold uppercase tracking-widest">
                                         <span className="text-gray-400">Subtotal</span>
-                                        <span>${subtotal.toFixed(2)}</span>
+                                        <span>₹{subtotal.toFixed(2)}</span>
                                     </div>
                                     <div className="flex justify-between text-base font-bold uppercase tracking-widest pt-2">
                                         <span>Total</span>
-                                        <span>${subtotal > 150 ? subtotal.toFixed(2) : (subtotal + 15).toFixed(2)}</span>
+                                        <span>₹{totalPrice.toFixed(2)}</span>
                                     </div>
                                 </div>
                             </div>

@@ -16,6 +16,11 @@ const getProducts = asyncHandler(async (req, res) => {
         ];
     }
     if (req.query.category) filter.category = req.query.category;
+    // Classify by schema field "product" (e.g. Hijabs, Accessories, Earring, Rings, Necklace)
+    if (req.query.product) {
+        const p = String(req.query.product).trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        if (p) filter.product = new RegExp(`^${p}$`, 'i');
+    }
     const minPrice = req.query.minPrice ? Number(req.query.minPrice) : null;
     const maxPrice = req.query.maxPrice ? Number(req.query.maxPrice) : null;
     if (minPrice != null || maxPrice != null) {

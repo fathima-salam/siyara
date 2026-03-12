@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useAuthStore } from "@/store/useAuthStore";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -18,6 +18,8 @@ export default function LoginPage() {
 
   const setUserInfo = useAuthStore((state) => state.setUserInfo);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirect");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -32,7 +34,10 @@ export default function LoginPage() {
         isAdmin: data.isAdmin,
         token: data.token,
       });
-      router.push("/");
+      const path = redirectTo && typeof redirectTo === "string" && redirectTo.startsWith("/") && !redirectTo.startsWith("//")
+        ? redirectTo
+        : "/";
+      router.push(path);
     } catch (err) {
       setError(
         err.response?.data?.message || err.message || "Invalid email or password."

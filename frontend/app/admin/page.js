@@ -37,7 +37,7 @@ export default function AdminDashboardPage() {
     const dashboardStats = [
         {
             label: "Total Revenue",
-            value: statsData ? `$${statsData.totalRevenue}` : "$0.00",
+            value: statsData ? `₹${statsData.totalRevenue}` : "₹0.00",
             icon: DollarSign,
             trend: statsData?.trends?.revenue || "+0%",
             positive: true
@@ -58,7 +58,7 @@ export default function AdminDashboardPage() {
         },
         {
             label: "Avg. Order Value",
-            value: statsData ? `$${statsData.avgOrderValue}` : "$0.00",
+            value: statsData ? `₹${statsData.avgOrderValue}` : "₹0.00",
             icon: TrendingUp,
             trend: statsData?.trends?.avgValue || "+0%",
             positive: true

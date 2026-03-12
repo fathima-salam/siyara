@@ -135,7 +135,7 @@ export default function AdminOrdersPage() {
                         <td className="px-3 py-2 text-[10px] text-gray-500">
                           {order.orderDate ? new Date(order.orderDate).toLocaleDateString() : order.createdAt ? new Date(order.createdAt).toLocaleDateString() : "—"}
                         </td>
-                        <td className="px-3 py-2 text-[11px] font-bold">${Number(order.finalPrice ?? order.total ?? 0).toFixed(2)}</td>
+                        <td className="px-3 py-2 text-[11px] font-bold">₹{Number(order.finalPrice ?? order.total ?? 0).toFixed(2)}</td>
                         <td className="px-3 py-2">
                           <span className="text-[9px] font-bold uppercase tracking-wider text-gray-600">{order.status || "order placed"}</span>
                         </td>

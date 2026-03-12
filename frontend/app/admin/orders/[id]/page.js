@@ -126,7 +126,7 @@ export default function AdminOrderDetailPage() {
                 {items.map((item, i) => (
                   <li key={i} className="flex justify-between text-xs">
                     <span>Product ref: {item.productId?.toString?.()?.slice(-8) || "—"} · {item.color} × {item.quantity}</span>
-                    <span>${Number(item.price || 0).toFixed(2)}</span>
+                    <span>₹{Number(item.price || 0).toFixed(2)}</span>
                   </li>
                 ))}
               </ul>
@@ -135,10 +135,10 @@ export default function AdminOrderDetailPage() {
             <div className="mt-4 pt-4 border-t border-gray-100 flex items-center gap-2">
               <DollarSign className="w-4 h-4 text-gray-400" />
               <span className="text-[10px] uppercase text-gray-500">Total</span>
-              <span className="font-bold">${Number(order.total ?? 0).toFixed(2)}</span>
-              {order.discount > 0 && <span className="text-gray-500 text-xs">Discount: ${order.discount}</span>}
+              <span className="font-bold">₹{Number(order.total ?? 0).toFixed(2)}</span>
+              {order.discount > 0 && <span className="text-gray-500 text-xs">Discount: ₹{order.discount}</span>}
               <span className="text-[10px] uppercase text-gray-500 ml-2">Final</span>
-              <span className="font-bold">${Number(order.finalPrice ?? 0).toFixed(2)}</span>
+              <span className="font-bold">₹{Number(order.finalPrice ?? 0).toFixed(2)}</span>
             </div>
 
             {order.status === "return requested" && (

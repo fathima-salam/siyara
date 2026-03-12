@@ -5,28 +5,74 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
 import { Filter, ChevronDown, SlidersHorizontal, SearchX } from "lucide-react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 
 import { productService } from "@/api";
 
-const CATEGORIES = ["All", "Hijabs", "Scarves", "Shawls", "Abayas", "Accessories"];
+// Product types from schema field "product" (classification), not productName
+const PRODUCT_FILTERS = ["All", "Hijabs", "Accessories", "Earring", "Rings", "Necklace"];
+
+// Banner poster per category: image from public/images/, description, text position (used in shop banner)
+const posterimages = {
+    all: {
+        image: "/images/all.png",
+        description: "Discover pieces that elevate every look.",
+        textpositions: "center",
+    },
+    hijab: {
+        image: "/images/hijab.png",
+        description: "Soft, stylish layers that elevate you.",
+        textpositions: "left",
+    },
+    accessories: {
+        image: "/images/accessories.png",
+        description: "Perfect touches to express your style.",
+        textpositions: "right",
+    },
+    earrings: {
+        image: "/images/earrings.png",
+        description: "Subtle shine, bold statement.",
+        textpositions: "right",
+    },
+    necklace: {
+        image: "/images/necklace.png",
+        description: "Graceful accents for every outfit.",
+        textpositions: "left",
+    },
+    ring: {
+        image: "/images/rings.png",
+        description: "Elegant circles of style and charm.",
+        textpositions: "center",
+    },
+};
+
+// Map filter label -> poster key
+const FILTER_TO_POSTER_KEY = {
+    All: "all",
+    Hijabs: "hijab",
+    Accessories: "accessories",
+    Earring: "earrings",
+    Rings: "ring",
+    Necklace: "necklace",
+};
 
 export default function ShopPage() {
+    const router = useRouter();
     const searchParams = useSearchParams();
     const keyword = searchParams.get("search") || "";
-    const categoryFromUrl = searchParams.get("category") || "";
+    const productFromUrl = searchParams.get("product") || searchParams.get("category") || "";
 
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState(() =>
-        categoryFromUrl && CATEGORIES.includes(categoryFromUrl) ? categoryFromUrl : "All"
+        productFromUrl && PRODUCT_FILTERS.includes(productFromUrl) ? productFromUrl : "All"
     );
     const [sortBy, setSortBy] = useState("Newest");
 
-    // Keep filter in sync when URL category changes (e.g. nav link to /shop?category=Hijabs)
+    // Keep filter in sync when URL changes
     useEffect(() => {
-        const urlCategory = searchParams.get("category") || "";
-        if (urlCategory && CATEGORIES.includes(urlCategory)) setFilter(urlCategory);
+        const urlProduct = searchParams.get("product") || searchParams.get("category") || "";
+        if (urlProduct && PRODUCT_FILTERS.includes(urlProduct)) setFilter(urlProduct);
     }, [searchParams]);
 
     useEffect(() => {
@@ -34,7 +80,7 @@ export default function ShopPage() {
             setLoading(true);
             try {
                 const params = {};
-                if (filter !== "All") params.category = filter;
+                if (filter !== "All") params.product = filter;
                 if (keyword) params.keyword = keyword;
                 if (sortBy === "Price: Low to High") params.sort = "price_asc";
                 if (sortBy === "Price: High to Low") params.sort = "price_desc";
@@ -61,26 +107,56 @@ export default function ShopPage() {
         <main className="min-h-screen bg-white">
             <Header />
 
-            {/* Banner */}
-            <section className="pt-40 pb-20 bg-[#f8f8f8] text-center">
-                <h1 className="text-4xl md:text-6xl font-bold uppercase tracking-tight mb-4">Shop Hijabs & Scarves</h1>
-                <p className="text-gray-500 text-sm uppercase tracking-widest font-bold">Home / Shop</p>
-            </section>
+            {/* Banner: image, description and text position from posterimages by category */}
+            {(() => {
+                const posterKey = FILTER_TO_POSTER_KEY[filter] || "all";
+                const poster = posterimages[posterKey] || posterimages.all;
+                const pos = (poster.textpositions || "center").toLowerCase();
+                const textAlign = pos === "left" ? "text-left" : pos === "right" ? "text-right" : "text-center";
+                const justify = pos === "left" ? "justify-start" : pos === "right" ? "justify-end" : "justify-center";
+                return (
+                    <section className="relative pt-32 pb-24 min-h-[420px] md:min-h-[480px] overflow-hidden">
+                        {/* Background image only */}
+                        <div
+                            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+                            style={{ backgroundImage: poster.image ? `url(${poster.image})` : undefined }}
+                        />
+                        <div className={`container mx-auto px-6 relative z-10 flex ${justify} items-center min-h-[340px] md:min-h-[380px]`}>
+                            <div className={`max-w-2xl ${textAlign}`}>
+                                {filter !== "All" && (
+                                    <h1 className="text-3xl md:text-5xl font-bold uppercase tracking-tight mb-3 text-gray-800">
+                                        {filter}
+                                    </h1>
+                                )}
+                                <p className={`text-gray-700 font-medium ${filter === "All" ? "text-lg md:text-xl" : "text-base md:text-lg"}`}>
+                                    {poster.description}
+                                </p>
+                            </div>
+                        </div>
+                    </section>
+                );
+            })()}
 
             <section className="py-20">
                 <div className="container mx-auto px-6">
-                    {/* Controls */}
+                    {/* Controls: filter by schema "product" (All, Hijabs, Accessories, Earring, Rings, Necklace) */}
                     <div className="flex flex-col md:flex-row justify-between items-center mb-12 border-b border-gray-100 pb-8 space-y-4 md:space-y-0">
-                        <div className="flex items-center space-x-8">
-                            <button className="flex items-center space-x-2 text-xs uppercase tracking-widest font-bold">
-                                <SlidersHorizontal className="w-4 h-4" />
-                                <span>Filter</span>
-                            </button>
-                            <div className="hidden md:flex items-center space-x-6">
-                                {CATEGORIES.map((cat) => (
+                        <div className="flex items-center gap-6 md:gap-8 flex-wrap">
+                            <div className="flex items-center gap-2 text-sm font-bold text-primary">
+                                <Filter className="w-4 h-4" />
+                                <span>FILTER</span>
+                            </div>
+                            <div className="flex items-center gap-4 md:gap-6 flex-wrap">
+                                {PRODUCT_FILTERS.map((cat) => (
                                     <button
                                         key={cat}
-                                        onClick={() => setFilter(cat)}
+                                        onClick={() => {
+                                            setFilter(cat);
+                                            const q = new URLSearchParams(searchParams.toString());
+                                            if (cat === "All") q.delete("product"); else q.set("product", cat);
+                                            q.delete("category");
+                                            router.replace(q.toString() ? `/shop?${q.toString()}` : "/shop", { scroll: false });
+                                        }}
                                         className={`text-[10px] uppercase tracking-[0.2em] font-bold py-1 border-b-2 transition-all ${filter === cat ? "border-accent text-primary" : "border-transparent text-gray-400 hover:text-primary"
                                             }`}
                                     >
@@ -115,7 +191,7 @@ export default function ShopPage() {
                         <div className="py-20 text-center flex flex-col items-center">
                             <SearchX className="w-12 h-12 text-gray-200 mb-6" />
                             <p className="text-gray-500 uppercase tracking-widest font-bold text-xs mb-8">
-                                {keyword ? `No products found for "${keyword}"` : "No products available in this category"}
+                                {keyword ? `No products found for "${keyword}"` : filter !== "All" ? `No products in ${filter}` : "No products available"}
                             </p>
                             <button onClick={() => setFilter("All")} className="btn-primary">Clear Filters</button>
                         </div>

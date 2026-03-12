@@ -1,16 +1,39 @@
 import asyncHandler from '../middleware/asyncHandler.js';
 import Order from '../models/orderModel.js';
 
-// @desc    Create new order
+// @desc    Create new order (supports Cash on Delivery and Razorpay as method option)
 // @route   POST /api/orders
 // @access  Private
 const addOrderItems = asyncHandler(async (req, res) => {
-    const { orderItems, shippingAddress, paymentMethod, taxPrice, shippingPrice, totalPrice } = req.body;
+    const { orderItems, shippingAddress, paymentMethod, shippingPrice, totalPrice } = req.body;
     if (!orderItems || orderItems.length === 0) {
         res.status(400);
         throw new Error('No order items');
     }
-    const order = new Order({ user: req.user._id, orderItems, shippingAddress, paymentMethod, taxPrice, shippingPrice, totalPrice });
+    const items = orderItems.map((oi) => ({
+        productId: oi.product,
+        color: oi.color || '',
+        size: oi.size || '',
+        quantity: Number(oi.qty) || 1,
+        price: Number(oi.price) || 0,
+    }));
+    const total = Number(totalPrice) || 0;
+    const deliveryAmount = Number(shippingPrice) || 0;
+    const payment = (paymentMethod && String(paymentMethod).toLowerCase()) || 'cod';
+    const order = new Order({
+        customerId: req.user._id,
+        items,
+        shippingAddress: shippingAddress || {},
+        status: 'order placed',
+        total,
+        discount: 0,
+        finalPrice: total,
+        deliveryAmount,
+        transactionDetails: {
+            paymentMethod: payment,
+            paymentStatus: payment === 'cod' ? 'pay_on_delivery' : 'pending',
+        },
+    });
     const createdOrder = await order.save();
     res.status(201).json(createdOrder);
 });
@@ -19,7 +42,9 @@ const addOrderItems = asyncHandler(async (req, res) => {
 // @route   GET /api/orders/myorders
 // @access  Private
 const getMyOrders = asyncHandler(async (req, res) => {
-    const orders = await Order.find({ user: req.user._id });
+    const orders = await Order.find({ customerId: req.user._id })
+        .populate('items.productId', 'productName product thumbnails variants')
+        .sort({ orderDate: -1 });
     res.json(orders);
 });
 
@@ -27,31 +52,45 @@ const getMyOrders = asyncHandler(async (req, res) => {
 // @route   GET /api/orders/:id
 // @access  Private
 const getOrderById = asyncHandler(async (req, res) => {
-    const order = await Order.findById(req.params.id).populate('user', 'name email');
+    const order = await Order.findById(req.params.id)
+        .populate('customerId', 'name email')
+        .populate('items.productId', 'productName product thumbnails variants');
     if (order) {
-        res.json(order);
+        const po = order.toObject();
+        po.user = po.customerId;
+        po.orderItems = (po.items || []).map((it) => {
+            const p = it.productId;
+            const name = p?.productName || p?.product || 'Product';
+            const image = p?.thumbnails?.[0] || p?.variants?.[0]?.images?.[0];
+            return { name, image, qty: it.quantity, price: it.price, color: it.color, size: it.size || '' };
+        });
+        po.totalPrice = po.finalPrice;
+        po.itemsPrice = po.total;
+        po.shippingPrice = po.deliveryAmount;
+        po.isPaid = po.transactionDetails?.paymentStatus === 'paid';
+        po.paidAt = po.transactionId ? new Date() : null;
+        po.isDelivered = po.status === 'delivered';
+        res.json(po);
     } else {
         res.status(404);
         throw new Error('Order not found');
     }
 });
 
-// @desc    Update order to paid
+// @desc    Update order to paid (e.g. after Razorpay/Stripe success)
 // @route   PUT /api/orders/:id/pay
 // @access  Private
 const updateOrderToPaid = asyncHandler(async (req, res) => {
     const order = await Order.findById(req.params.id);
     if (order) {
-        order.isPaid = true;
-        order.paidAt = Date.now();
-        order.paymentResult = {
-            id: req.body.id,
-            status: req.body.status,
-            update_time: req.body.update_time,
-            email_address: req.body.payer?.email_address,
-        };
+        if (!order.transactionDetails) order.transactionDetails = {};
+        order.transactionDetails.paymentStatus = 'paid';
+        order.transactionId = req.body.transactionId || req.body.id || '';
         const updatedOrder = await order.save();
-        res.json(updatedOrder);
+        const po = updatedOrder.toObject();
+        po.isPaid = true;
+        po.paidAt = new Date();
+        res.json(po);
     } else {
         res.status(404);
         throw new Error('Order not found');
@@ -64,8 +103,8 @@ const updateOrderToPaid = asyncHandler(async (req, res) => {
 const updateOrderToDelivered = asyncHandler(async (req, res) => {
     const order = await Order.findById(req.params.id);
     if (order) {
-        order.isDelivered = true;
-        order.deliveredAt = Date.now();
+        order.status = 'delivered';
+        order.deliveryDate = new Date();
         const updatedOrder = await order.save();
         res.json(updatedOrder);
     } else {
@@ -78,7 +117,7 @@ const updateOrderToDelivered = asyncHandler(async (req, res) => {
 // @route   GET /api/orders
 // @access  Private/Admin
 const getOrders = asyncHandler(async (req, res) => {
-    const orders = await Order.find({}).populate('user', 'id name');
+    const orders = await Order.find({}).populate('customerId', 'id name email').sort({ orderDate: -1 });
     res.json(orders);
 });
 
@@ -87,14 +126,11 @@ const getOrders = asyncHandler(async (req, res) => {
 // @access  Private/Admin
 const getDashboardStats = asyncHandler(async (req, res) => {
     const orders = await Order.find({});
-    const totalRevenue = orders.reduce((acc, order) => acc + (order.isPaid ? order.totalPrice : 0), 0);
+    const totalRevenue = orders.reduce((acc, order) => acc + (order.finalPrice || 0), 0);
     const totalOrders = orders.length;
 
-    // We'll lazy import User to avoid any potential circular dependency issues
     const User = (await import('../models/userModel.js')).default;
     const totalCustomers = await User.countDocuments({ isAdmin: false });
-
-    // Calculate growth (simple mock logic)
     const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
     res.json({

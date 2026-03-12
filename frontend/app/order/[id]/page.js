@@ -1,16 +1,22 @@
 "use client";
 
 import { useState, useEffect, use } from "react";
-import { orderService, stripeService } from "@/api";
+import { orderService } from "@/api";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { CheckCircle, Clock, Truck, MapPin, CreditCard, ChevronLeft, CreditCard as PaymentIcon } from "lucide-react";
+import { CheckCircle, Clock, Truck, MapPin, CreditCard, ChevronLeft, Banknote, Smartphone } from "lucide-react";
 import Link from "next/link";
 import SafeImage from "@/components/SafeImage";
 import { useSearchParams } from "next/navigation";
-import { loadStripe } from "@stripe/stripe-js";
-import { Elements } from "@stripe/react-stripe-js";
-import StripePayment from "@/components/StripePayment";
+import { motion } from "framer-motion";
+
+function resolveImageUrl(url) {
+    if (!url || typeof url !== "string") return url;
+    const u = url.trim();
+    if (u.startsWith("http://") || u.startsWith("https://")) return u;
+    const base = typeof process !== "undefined" && process.env.NEXT_PUBLIC_API_URL ? process.env.NEXT_PUBLIC_API_URL : "http://127.0.0.1:5000/api";
+    return base.replace(/\/api\/?$/, "") + (u.startsWith("/") ? u : `/${u}`);
+}
 
 export default function OrderPage({ params: paramsPromise }) {
     const params = use(paramsPromise);
@@ -19,23 +25,13 @@ export default function OrderPage({ params: paramsPromise }) {
 
     const [order, setOrder] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [clientSecret, setClientSecret] = useState("");
-    const [stripePromise, setStripePromise] = useState(null);
 
     const fetchOrder = async () => {
         try {
             const data = await orderService.getById(params.id);
             setOrder(data);
-
-            if (!data.isPaid) {
-                const config = await stripeService.getConfig();
-                setStripePromise(loadStripe(config.publishableKey));
-
-                const intent = await stripeService.createPaymentIntent(data.totalPrice);
-                setClientSecret(intent.clientSecret);
-            }
         } catch (error) {
-            console.error("Error fetching order context:", error);
+            console.error("Error fetching order:", error);
         } finally {
             setLoading(false);
         }
@@ -44,6 +40,10 @@ export default function OrderPage({ params: paramsPromise }) {
     useEffect(() => {
         fetchOrder();
     }, [params.id]);
+
+    const paymentMethod = order?.transactionDetails?.paymentMethod || "cod";
+    const isCod = paymentMethod === "cod";
+    const isRazorpay = paymentMethod === "razorpay";
 
     if (loading) return (
         <div className="min-h-screen flex items-center justify-center">
@@ -85,14 +85,19 @@ export default function OrderPage({ params: paramsPromise }) {
 
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
                         <div>
-                            <h1 className="text-3xl md:text-4xl font-bold uppercase tracking-tight mb-2">Order Tracking</h1>
-                            <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Order ID: #{order._id}</p>
+                            <h1 className="text-3xl md:text-4xl font-bold uppercase tracking-tight mb-2">Order Placed</h1>
+                            <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Order ID: #{order._id?.slice(-8)}</p>
                         </div>
                         <div className="flex items-center space-x-3 bg-white px-6 py-3 border border-gray-100 shadow-sm">
                             {order.isPaid ? (
                                 <div className="flex items-center space-x-2 text-emerald-600">
                                     <CheckCircle className="w-5 h-5" />
                                     <span className="text-[10px] font-bold uppercase tracking-widest">Payment Received</span>
+                                </div>
+                            ) : isCod ? (
+                                <div className="flex items-center space-x-2 text-primary">
+                                    <Banknote className="w-5 h-5" />
+                                    <span className="text-[10px] font-bold uppercase tracking-widest">Cash on Delivery</span>
                                 </div>
                             ) : (
                                 <div className="flex items-center space-x-2 text-amber-500">
@@ -143,19 +148,23 @@ export default function OrderPage({ params: paramsPromise }) {
                             <div className="bg-white p-8 border border-gray-100 shadow-sm">
                                 <h2 className="text-sm font-bold uppercase tracking-widest mb-8 pb-4 border-b border-gray-100">Ordered Items</h2>
                                 <div className="space-y-8">
-                                    {order.orderItems.map((item, i) => (
+                                    {(order.orderItems || []).map((item, i) => (
                                         <div key={i} className="flex items-center justify-between">
                                             <div className="flex items-center space-x-6">
-                                                <div className="relative w-20 h-24 bg-gray-50 overflow-hidden">
-                                                    <SafeImage src={item.image} alt={item.name} fill className="object-cover" />
+                                                <div className="relative w-24 h-28 bg-gray-50 overflow-hidden rounded flex-shrink-0">
+                                                    <SafeImage src={resolveImageUrl(item.image)} alt={item.name} fill className="object-cover" />
                                                 </div>
                                                 <div>
                                                     <p className="text-[10px] font-bold uppercase tracking-widest mb-1">{item.name}</p>
-                                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{item.qty} x ${item.price.toFixed(2)}</p>
-                                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">Size: {item.size} | Color: {item.color}</p>
+                                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{item.qty} x ₹{Number(item.price).toFixed(2)}</p>
+                                                    {(item.color || item.size) && (
+                                                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">
+                                                            {[item.size, item.color].filter(Boolean).join(" · ")}
+                                                        </p>
+                                                    )}
                                                 </div>
                                             </div>
-                                            <p className="text-sm font-bold">${(item.qty * item.price).toFixed(2)}</p>
+                                            <p className="text-sm font-bold">₹{((item.qty || 0) * (Number(item.price) || 0)).toFixed(2)}</p>
                                         </div>
                                     ))}
                                 </div>
@@ -178,44 +187,42 @@ export default function OrderPage({ params: paramsPromise }) {
                             </div>
 
                             <div className="bg-white p-8 border border-gray-100 shadow-sm">
-                                <h3 className="text-[10px] uppercase tracking-widest font-bold text-gray-400 mb-8 border-b border-gray-100 pb-4">Payment Summary</h3>
-
-                                {!order.isPaid && (
-                                    <div className="mb-8">
-                                        <div className="flex items-center space-x-2 text-amber-500 mb-6 bg-amber-50 p-4">
-                                            <PaymentIcon className="w-4 h-4" />
-                                            <span className="text-[10px] font-bold uppercase tracking-widest text-amber-700">Payment Required</span>
-                                        </div>
-
-                                        {clientSecret && stripePromise ? (
-                                            <Elements stripe={stripePromise} options={{ clientSecret }}>
-                                                <StripePayment
-                                                    orderId={order._id}
-                                                    amount={order.totalPrice}
-                                                    onSuccess={fetchOrder}
-                                                />
-                                            </Elements>
-                                        ) : (
-                                            <div className="py-4 text-center">
-                                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary mx-auto"></div>
-                                            </div>
-                                        )}
-                                    </div>
+                                <h3 className="text-[10px] uppercase tracking-widest font-bold text-gray-400 mb-4 border-b border-gray-100 pb-4">Payment</h3>
+                                <div className="mb-6 flex items-center gap-2">
+                                    {isCod ? (
+                                        <>
+                                            <Banknote className="w-4 h-4 text-primary" />
+                                            <span className="text-sm font-bold uppercase tracking-widest">Cash on Delivery</span>
+                                        </>
+                                    ) : isRazorpay ? (
+                                        <>
+                                            <Smartphone className="w-4 h-4 text-gray-600" />
+                                            <span className="text-sm font-bold uppercase tracking-widest">Razorpay (option)</span>
+                                        </>
+                                    ) : (
+                                        <span className="text-sm font-bold uppercase tracking-widest">{paymentMethod}</span>
+                                    )}
+                                </div>
+                                {isCod && (
+                                    <p className="text-xs text-gray-500 mb-6">Pay when your order is delivered.</p>
+                                )}
+                                {isRazorpay && !order.isPaid && (
+                                    <p className="text-xs text-gray-500 mb-6">Razorpay payment integration can be added later.</p>
                                 )}
 
                                 <div className="space-y-4 mb-8">
                                     <div className="flex justify-between text-xs font-bold uppercase tracking-widest">
                                         <span className="text-gray-400 font-normal">Subtotal</span>
-                                        <span>${order.itemsPrice.toFixed(2)}</span>
+                                        <span>₹{(order.itemsPrice ?? order.total).toFixed(2)}</span>
                                     </div>
                                     <div className="flex justify-between text-xs font-bold uppercase tracking-widest">
                                         <span className="text-gray-400 font-normal">Shipping</span>
-                                        <span>{order.shippingPrice === 0 ? "FREE" : `$${order.shippingPrice.toFixed(2)}`}</span>
+                                        <span>{(order.shippingPrice ?? order.deliveryAmount ?? 0) === 0 ? "FREE" : `₹${(order.shippingPrice ?? order.deliveryAmount).toFixed(2)}`}</span>
                                     </div>
                                 </div>
                                 <div className="flex justify-between text-base font-bold uppercase tracking-widest border-t border-gray-100 pt-6">
                                     <span>Total Amount</span>
-                                    <span className="text-accent">${order.totalPrice.toFixed(2)}</span>
+                                    <span className="text-accent">₹{(order.totalPrice ?? order.finalPrice).toFixed(2)}</span>
                                 </div>
                             </div>
                         </div>

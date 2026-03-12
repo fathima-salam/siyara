@@ -1,5 +1,6 @@
 import express from 'express';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import connectDB from './config/db.js';
@@ -10,9 +11,16 @@ import stripeRoutes from './routes/stripeRoutes.js';
 import adminRoutes from './routes/adminRoutes/index.js';
 import { notFound, errorHandler } from './middleware/errorMiddleware.js';
 
-dotenv.config();
+// Load .env from backend directory (works even when started from project root or via dotenvx)
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.join(__dirname, '.env') });
+
 if (!process.env.JWT_SECRET && process.env.NODE_ENV === 'production') {
   console.error('Fatal: JWT_SECRET environment variable is required in production.');
+  process.exit(1);
+}
+if (!process.env.MONGO_URI) {
+  console.error('Fatal: MONGO_URI is missing. Add it to backend/.env or set the env var.');
   process.exit(1);
 }
 connectDB();
@@ -66,4 +74,4 @@ app.use(notFound);
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`));
+app.listen(PORT, () => console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`));

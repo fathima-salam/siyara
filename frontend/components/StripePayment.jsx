@@ -57,7 +57,7 @@ export default function StripePayment({ orderId, amount, onSuccess }) {
                 {isLoading ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
                 ) : (
-                    <span>Pay Now (${amount.toFixed(2)})</span>
+                    <span>Pay Now (₹{amount.toFixed(2)})</span>
                 )}
             </button>
             {message && <div id="payment-message" className="text-red-500 text-[10px] font-bold uppercase tracking-widest text-center mt-4">{message}</div>}

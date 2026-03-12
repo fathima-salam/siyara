@@ -191,7 +191,7 @@ export default function AdminProductsPage() {
                                                     {p.category}
                                                 </span>
                                             </td>
-                                            <td className="px-3 py-2.5 text-[11px] font-bold">${Number(p.pricing?.sellingPrice ?? p.pricing?.offerPrice ?? p.price ?? 0).toFixed(2)}</td>
+                                            <td className="px-3 py-2.5 text-[11px] font-bold">₹{Number(p.pricing?.sellingPrice ?? p.pricing?.offerPrice ?? p.price ?? 0).toFixed(2)}</td>
                                             <td className="px-3 py-2.5">
                                                 <div className="flex items-center gap-1">
                                                     <Package className={`w-3 h-3 ${(p.totalStock ?? p.countInStock ?? 0) < 10 ? 'text-red-500' : (p.totalStock ?? p.countInStock ?? 0) < 20 ? 'text-amber-500' : 'text-emerald-500'}`} />

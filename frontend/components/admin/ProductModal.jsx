@@ -355,15 +355,24 @@ export default function ProductModal({ isOpen, onClose, product, onSuccess }) {
                         </div>
                       )}
                       <div className="space-y-1">
-                        <label className={labelClass}>Product (group)</label>
-                        <input
+                        <label className={labelClass}>Product (classification)</label>
+                        <select
                           required
-                          type="text"
                           className={inputClass}
                           value={formData.product}
                           onChange={(e) => setFormData({ ...formData, product: e.target.value })}
-                          placeholder="Classic Hijab"
-                        />
+                        >
+                          <option value="">Select type</option>
+                          <option value="Hijabs">Hijabs</option>
+                          <option value="Accessories">Accessories</option>
+                          <option value="Earring">Earring</option>
+                          <option value="Rings">Rings</option>
+                          <option value="Necklace">Necklace</option>
+                          {formData.product && !["Hijabs", "Accessories", "Earring", "Rings", "Necklace"].includes(formData.product) && (
+                            <option value={formData.product}>{formData.product}</option>
+                          )}
+                        </select>
+                        <p className="text-[10px] text-gray-500 mt-0.5">Used for shop filter (All, Hijabs, Accessories, etc.)</p>
                       </div>
                       <div className="space-y-1">
                         <label className={labelClass}>Product Name</label>
@@ -445,7 +454,7 @@ export default function ProductModal({ isOpen, onClose, product, onSuccess }) {
                     <h3 className="text-xs font-bold text-gray-900 pb-1 border-b border-primary w-fit">Pricing</h3>
                     <div className="grid grid-cols-3 gap-2">
                       <div className="space-y-1">
-                        <label className={labelClass}>Buying ($)</label>
+                        <label className={labelClass}>Buying (₹)</label>
                         <input
                           type="number"
                           step="0.01"
@@ -456,7 +465,7 @@ export default function ProductModal({ isOpen, onClose, product, onSuccess }) {
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className={labelClass}>Selling ($)</label>
+                        <label className={labelClass}>Selling (₹)</label>
                         <input
                           required
                           type="number"
@@ -468,7 +477,7 @@ export default function ProductModal({ isOpen, onClose, product, onSuccess }) {
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className={labelClass}>Offer ($)</label>
+                        <label className={labelClass}>Offer (₹)</label>
                         <input
                           type="number"
                           step="0.01"
