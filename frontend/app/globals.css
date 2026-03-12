@@ -1,0 +1,29 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #121212;
+  --color-secondary: #f4f4f4;
+  --color-accent: #e5b95f;
+  /* Gold-ish accent like the template */
+  --font-heading: 'Outfit', sans-serif;
+}
+
+@layer base {
+  body {
+    @apply bg-white text-primary font-sans;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-primary text-white py-3 px-8 rounded-none uppercase tracking-widest text-xs font-bold transition-all hover:bg-primary/90 active:scale-95;
+  }
+
+  .btn-outline {
+    @apply border border-primary text-primary py-3 px-8 rounded-none uppercase tracking-widest text-xs font-bold transition-all hover:bg-primary hover:text-white active:scale-95;
+  }
+
+  .nav-link {
+    @apply relative text-xs uppercase tracking-widest font-bold transition-all hover:text-accent after:content-[''] after:absolute after:bottom-[-4px] after:left-0 after:w-0 after:h-[1px] after:bg-accent after:transition-all hover:after:w-full;
+  }
+}
