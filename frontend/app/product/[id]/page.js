@@ -21,10 +21,12 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { productService } from "@/api";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import ProductCard from "@/components/ProductCard";
 
 export default function ProductDetailPage() {
     const params = useParams();
     const [product, setProduct] = useState(null);
+    const [similarProducts, setSimilarProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedColor, setSelectedColor] = useState("");
     const [quantity, setQuantity] = useState(1);
@@ -40,6 +42,16 @@ export default function ProductDetailPage() {
                 setProduct(data);
                 const colors = data.variants?.map((v) => v.color) || [];
                 if (colors.length > 0) setSelectedColor(colors[0]);
+
+                // Fetch similar products
+                if (data.product) {
+                    const similarData = await productService.getProducts({ product: data.product });
+                    const list = Array.isArray(similarData?.products) 
+                        ? similarData.products 
+                        : Array.isArray(similarData) ? similarData : [];
+                    // Filter out current product and limit to 4
+                    setSimilarProducts(list.filter(p => p._id !== data._id).slice(0, 4));
+                }
             } catch (error) {
                 console.error("Error fetching product:", error);
             } finally {
@@ -400,6 +412,35 @@ export default function ProductDetailPage() {
                     </div>
                 </div>
             </section>
+            
+            {/* Similar Products */}
+            {similarProducts.length > 0 && (
+                <section className="py-20 bg-gray-50/50">
+                    <div className="container mx-auto px-6">
+                        <div className="flex items-center justify-between mb-12">
+                            <div>
+                                <h2 className="text-3xl font-black uppercase tracking-tighter text-primary">
+                                    Similar Products
+                                </h2>
+                                <p className="text-xs text-gray-400 uppercase tracking-[0.2em] font-bold mt-2">
+                                    More items you might love
+                                </p>
+                            </div>
+                            <Link 
+                                href="/shop" 
+                                className="text-[10px] uppercase tracking-widest font-black border-b-2 border-primary pb-1 hover:text-accent hover:border-accent transition-all"
+                            >
+                                View All
+                            </Link>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-y-16 gap-x-8">
+                            {similarProducts.map((p) => (
+                                <ProductCard key={p._id} product={p} />
+                            ))}
+                        </div>
+                    </div>
+                </section>
+            )}
 
             <Footer />
         </main>
