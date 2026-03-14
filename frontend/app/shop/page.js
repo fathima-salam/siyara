@@ -11,7 +11,7 @@ import Image from "next/image";
 import { productService } from "@/api";
 
 // Product types from schema field "product" (classification), not productName
-const PRODUCT_FILTERS = ["All", "Hijabs", "Accessories", "Earrings", "Rings", "Necklaces", "Scarves", "Abayas"];
+const PRODUCT_FILTERS = ["All", "Hijabs", "Accessories", "Earring", "Rings", "Necklace", "Scarves", "Abayas"];
 
 // Banner poster per category: image from public/images/, description, text position (used in shop banner)
 const posterimages = {
@@ -92,7 +92,7 @@ export default function ShopPage() {
         const fetchProducts = async () => {
             setLoading(true);
             try {
-                const params = {};
+                const params = { pageSize: 40 };
                 if (filter !== "All") params.product = filter;
                 if (keyword) params.keyword = keyword;
                 if (sortBy === "Price: Low to High") params.sort = "price_asc";
@@ -110,11 +110,8 @@ export default function ShopPage() {
         fetchProducts();
     }, [filter, keyword, sortBy]);
 
-    if (loading) return (
-        <div className="py-24 text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-        </div>
-    );
+    // We no longer return early here so that the layout (Header, Banner, Filters) is visible
+    // if (loading) return ... 
 
     return (
         <main className="min-h-screen bg-white">
@@ -210,7 +207,11 @@ export default function ShopPage() {
                     </div>
 
                     {/* Grid */}
-                    {products.length === 0 ? (
+                    {loading ? (
+                        <div className="py-24 text-center">
+                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+                        </div>
+                    ) : products.length === 0 ? (
                         <div className="py-20 text-center flex flex-col items-center">
                             <SearchX className="w-12 h-12 text-gray-200 mb-6" />
                             <p className="text-gray-500 uppercase tracking-widest font-bold text-xs mb-8">

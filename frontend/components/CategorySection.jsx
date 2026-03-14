@@ -13,12 +13,12 @@ const categories = [
     {
         name: "EXPLORE EARRINGS",
         src: "/video2.mp4",
-        link: "/shop?product=Earrings",
+        link: "/shop?product=Earring",
     },
     {
         name: "EXPLORE NECKLACES",
         src: "/video3.mp4",
-        link: "/shop?product=Necklaces",
+        link: "/shop?product=Necklace",
     },
     {
         name: "EXPLORE RINGS",
