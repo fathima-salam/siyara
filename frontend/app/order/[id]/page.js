@@ -14,7 +14,7 @@ function resolveImageUrl(url) {
     if (!url || typeof url !== "string") return url;
     const u = url.trim();
     if (u.startsWith("http://") || u.startsWith("https://")) return u;
-    const base = typeof process !== "undefined" && process.env.NEXT_PUBLIC_API_URL ? process.env.NEXT_PUBLIC_API_URL : "http://127.0.0.1:5000/api";
+    const base = typeof process !== "undefined" && process.env.NEXT_PUBLIC_API_URL ? process.env.NEXT_PUBLIC_API_URL : "http://localhost:5001/api";
     return base.replace(/\/api\/?$/, "") + (u.startsWith("/") ? u : `/${u}`);
 }
 

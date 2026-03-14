@@ -6,6 +6,7 @@ import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
 import { Filter, ChevronDown, SlidersHorizontal, SearchX } from "lucide-react";
 import { useSearchParams, useRouter } from "next/navigation";
+import Image from "next/image";
 
 import { productService } from "@/api";
 
@@ -115,22 +116,34 @@ export default function ShopPage() {
                 const textAlign = pos === "left" ? "text-left" : pos === "right" ? "text-right" : "text-center";
                 const justify = pos === "left" ? "justify-start" : pos === "right" ? "justify-end" : "justify-center";
                 return (
-                    <section className="relative pt-32 pb-24 min-h-[420px] md:min-h-[480px] overflow-hidden">
-                        {/* Background image only */}
-                        <div
-                            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-                            style={{ backgroundImage: poster.image ? `url(${poster.image})` : undefined }}
-                        />
-                        <div className={`container mx-auto px-6 relative z-10 flex ${justify} items-center min-h-[340px] md:min-h-[380px]`}>
-                            <div className={`max-w-2xl ${textAlign}`}>
-                                {filter !== "All" && (
-                                    <h1 className="text-3xl md:text-5xl font-bold uppercase tracking-tight mb-3 text-gray-800">
-                                        {filter}
-                                    </h1>
-                                )}
-                                <p className={`text-gray-700 font-medium ${filter === "All" ? "text-lg md:text-xl" : "text-base md:text-lg"}`}>
-                                    {poster.description}
-                                </p>
+                    <section className="relative w-full overflow-hidden bg-gray-50 border-b border-gray-100">
+                        <div className="relative w-full aspect-[21/9] sm:aspect-[25/9] md:aspect-[25/8] lg:aspect-[255/80] max-h-[600px]">
+                            {poster.image && (
+                                <Image
+                                    src={poster.image}
+                                    alt={filter}
+                                    fill
+                                    priority
+                                    className="object-cover object-center"
+                                    sizes="100vw"
+                                />
+                            )}
+                            {/* Subtle dark overlay for text legibility */}
+                            <div className="absolute inset-0 bg-black/10 z-0" />
+                        </div>
+
+                        <div className={`absolute inset-0 z-10 flex ${justify} items-center`}>
+                            <div className="container mx-auto px-6">
+                                <div className={`max-w-2xl ${textAlign} drop-shadow-sm`}>
+                                    {filter !== "All" && (
+                                        <h1 className="text-3xl md:text-5xl lg:text-6xl font-black uppercase tracking-tighter mb-4 text-white drop-shadow-lg">
+                                            {filter}
+                                        </h1>
+                                    )}
+                                    <p className={`text-white font-bold drop-shadow-md ${filter === "All" ? "text-xl md:text-2xl lg:text-3xl" : "text-lg md:text-xl lg:text-2xl"}`}>
+                                        {poster.description}
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     </section>
