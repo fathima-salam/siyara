@@ -6,24 +6,24 @@ import { motion } from "framer-motion";
 
 const categories = [
     {
-        name: "EXPLORE HIJAB",
+        name: "EXPLORE HIJABS",
         src: "/video1.mp4",
-        link: "/shop?category=Hijabs",
+        link: "/shop?product=Hijabs",
     },
     {
-        name: "EXPLORE EARRING",
+        name: "EXPLORE EARRINGS",
         src: "/video2.mp4",
-        link: "/shop?category=Earrings",
+        link: "/shop?product=Earrings",
     },
     {
-        name: "EXPLORE NECKLACE",
+        name: "EXPLORE NECKLACES",
         src: "/video3.mp4",
-        link: "/shop?category=Necklaces",
+        link: "/shop?product=Necklaces",
     },
     {
         name: "EXPLORE RINGS",
         src: "/video4.mp4",
-        link: "/shop?category=Rings",
+        link: "/shop?product=Rings",
     },
 ];
 

@@ -11,7 +11,7 @@ import Image from "next/image";
 import { productService } from "@/api";
 
 // Product types from schema field "product" (classification), not productName
-const PRODUCT_FILTERS = ["All", "Hijabs", "Accessories", "Earring", "Rings", "Necklace"];
+const PRODUCT_FILTERS = ["All", "Hijabs", "Accessories", "Earrings", "Rings", "Necklaces", "Scarves", "Abayas"];
 
 // Banner poster per category: image from public/images/, description, text position (used in shop banner)
 const posterimages = {
@@ -35,15 +35,25 @@ const posterimages = {
         description: "Subtle shine, bold statement.",
         textpositions: "right",
     },
-    necklace: {
+    necklaces: {
         image: "/images/necklace.png",
         description: "Graceful accents for every outfit.",
         textpositions: "left",
     },
-    ring: {
+    rings: {
         image: "/images/rings.png",
         description: "Elegant circles of style and charm.",
         textpositions: "center",
+    },
+    scarves: {
+        image: "/images/scarves.png",
+        description: "Lightweight elegance for every season.",
+        textpositions: "center",
+    },
+    abayas: {
+        image: "/images/abayas.png",
+        description: "Modest grace in every fold.",
+        textpositions: "left",
     },
 };
 
@@ -52,9 +62,11 @@ const FILTER_TO_POSTER_KEY = {
     All: "all",
     Hijabs: "hijab",
     Accessories: "accessories",
-    Earring: "earrings",
-    Rings: "ring",
-    Necklace: "necklace",
+    Earrings: "earrings",
+    Rings: "rings",
+    Necklaces: "necklaces",
+    Scarves: "scarves",
+    Abayas: "abayas",
 };
 
 export default function ShopPage() {
