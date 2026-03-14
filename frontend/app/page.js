@@ -12,17 +12,15 @@ export default function Home() {
       <CategorySection />
 
       {/* Promotional CTA - banner image unchanged */}
-      <section className="py-32 relative overflow-hidden bg-primary text-white text-center">
+      <section className="py-52 relative overflow-hidden bg-primary text-white text-center">
         <div
-          className="absolute inset-0 opacity-40 bg-cover bg-center bg-fixed grayscale"
-          style={{ backgroundImage: "url('https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=1600')" }}
+          className="absolute inset-0 opacity-60 bg-cover bg-center bg-fixed"
+          style={{ backgroundImage: "url('/banner-2-sec3.jpg')" }}
         />
         <div className="container mx-auto px-6 relative z-10">
-          <p className="text-[10px] uppercase tracking-[0.4em] font-bold mb-6 text-accent">Limited Offer</p>
-          <h2 className="text-4xl md:text-6xl font-bold uppercase mb-10 tracking-tight">Explore our <br /> Scarf & Hijab Collection</h2>
-          <button className="btn-primary bg-accent border-accent hover:bg-white hover:text-primary">
-            Shop Scarves
-          </button>
+          <p className="max-w-2xl mx-auto text-lg md:text-xl leading-relaxed font-light tracking-wide italic">
+            "Embrace elegance and modesty with our curated collection of hijabs, crafted from premium fabrics to empower your everyday style."
+          </p>
         </div>
       </section>
 
@@ -41,7 +39,7 @@ export default function Home() {
         <div className="h-[400px] lg:h-auto min-h-[500px] relative overflow-hidden">
           <div
             className="absolute inset-0 bg-cover bg-center bg-fixed"
-            style={{ backgroundImage: "url('https://images.unsplash.com/photo-1551232864-3f0890e580d9?w=1200')" }}
+            style={{ backgroundImage: "url('/banner3.jpg')" }}
           />
         </div>
       </section>

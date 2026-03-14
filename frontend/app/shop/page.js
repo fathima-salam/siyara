@@ -132,18 +132,16 @@ export default function ShopPage() {
                             <div className="absolute inset-0 bg-black/10 z-0" />
                         </div>
 
-                        <div className={`absolute inset-0 z-10 flex ${justify} items-center`}>
-                            <div className="container mx-auto px-6">
-                                <div className={`max-w-2xl ${textAlign} drop-shadow-sm`}>
-                                    {filter !== "All" && (
-                                        <h1 className="text-3xl md:text-5xl lg:text-6xl font-black uppercase tracking-tighter mb-4 text-white drop-shadow-lg">
-                                            {filter}
-                                        </h1>
-                                    )}
-                                    <p className={`text-white font-bold drop-shadow-md ${filter === "All" ? "text-xl md:text-2xl lg:text-3xl" : "text-lg md:text-xl lg:text-2xl"}`}>
-                                        {poster.description}
-                                    </p>
-                                </div>
+                        <div className={`absolute inset-0 z-10 flex ${justify} items-center px-6 md:px-12 lg:px-24`}>
+                            <div className={`max-w-2xl ${textAlign} drop-shadow-sm`}>
+                                {filter !== "All" && (
+                                    <h1 className="text-2xl md:text-4xl lg:text-5xl font-black uppercase tracking-tighter mb-4 text-white drop-shadow-2xl">
+                                        {filter}
+                                    </h1>
+                                )}
+                                <p className={`text-white font-bold drop-shadow-lg ${filter === "All" ? "text-lg md:text-xl lg:text-2xl" : "text-sm md:text-base lg:text-lg"}`}>
+                                    {poster.description}
+                                </p>
                             </div>
                         </div>
                     </section>
@@ -155,9 +153,9 @@ export default function ShopPage() {
                     {/* Controls: filter by schema "product" (All, Hijabs, Accessories, Earring, Rings, Necklace) */}
                     <div className="flex flex-col md:flex-row justify-between items-center mb-12 border-b border-gray-100 pb-8 space-y-4 md:space-y-0">
                         <div className="flex items-center gap-6 md:gap-8 flex-wrap">
-                            <div className="flex items-center gap-2 text-sm font-bold text-primary">
+                        <div className="flex items-center gap-4 text-primary shrink-0">
                                 <Filter className="w-4 h-4" />
-                                <span>FILTER</span>
+                                <span className="text-[10px] tracking-[0.3em] font-black">FILTER</span>
                             </div>
                             <div className="flex items-center gap-4 md:gap-6 flex-wrap">
                                 {PRODUCT_FILTERS.map((cat) => (
