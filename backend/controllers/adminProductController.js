@@ -80,6 +80,8 @@ export const addProduct = asyncHandler(async (req, res) => {
     variants: normalizedVariants,
     thumbnails: Array.isArray(thumbnails) ? thumbnails.filter(Boolean) : [],
     status: statusVal,
+    stone: stone != null ? String(stone).trim() : undefined,
+    gender: gender != null ? String(gender).trim() : undefined,
   });
 
   res.status(201).json(productDoc);
@@ -134,6 +136,8 @@ export const editProduct = asyncHandler(async (req, res) => {
   }
   if (Array.isArray(thumbnails)) product.thumbnails = thumbnails.filter(Boolean);
   if (status && PRODUCT_STATUSES.includes(status)) product.status = status;
+  if (stone !== undefined) product.stone = stone;
+  if (gender !== undefined) product.gender = gender;
 
   await product.save();
   res.json(product);

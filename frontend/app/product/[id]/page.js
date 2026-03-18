@@ -22,6 +22,7 @@ import { productService } from "@/api";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import ProductCard from "@/components/ProductCard";
+import { useWishlistStore } from "@/store/useWishlistStore";
 
 export default function ProductDetailPage() {
     const params = useParams();
@@ -33,6 +34,7 @@ export default function ProductDetailPage() {
     const [mainImageIndex, setMainImageIndex] = useState(0);
     const addItem = useCartStore((state) => state.addItem);
     const userInfo = useAuthStore((s) => s.userInfo);
+    const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlistStore();
     const router = useRouter();
 
     useEffect(() => {
@@ -112,6 +114,28 @@ export default function ProductDetailPage() {
             qty: quantity,
             image: selectedVariant?.images?.[0] || product?.thumbnails?.[0],
         });
+    };
+
+    const handleBuyNow = () => {
+        if (!userInfo?.token) {
+            router.push(`/login?redirect=${encodeURIComponent(`/product/${params?.id || product?._id}`)}`);
+            return;
+        }
+        handleAddToCart();
+        router.push("/cart");
+    };
+
+    const isFavorite = isInWishlist(product?._id);
+    const toggleWishlist = () => {
+        if (!userInfo?.token) {
+            router.push(`/login?redirect=${encodeURIComponent(`/product/${params?.id || product?._id}`)}`);
+            return;
+        }
+        if (isFavorite) {
+            removeFromWishlist(product._id);
+        } else {
+            addToWishlist(product);
+        }
     };
 
     const inStock = (product?.totalStock ?? selectedVariant?.quantity ?? 0) > 0;
@@ -334,16 +358,19 @@ export default function ProductDetailPage() {
                                 )}
                                 <button
                                     type="button"
-                                    className="h-9 px-4 rounded text-sm bg-amber-400 text-gray-900 font-semibold hover:bg-amber-500 transition"
+                                    onClick={handleBuyNow}
+                                    disabled={!inStock}
+                                    className="h-9 px-4 rounded text-sm bg-amber-400 text-gray-900 font-semibold hover:bg-amber-500 transition disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     Buy Now
                                 </button>
                                 <button
                                     type="button"
+                                    onClick={toggleWishlist}
                                     className="w-9 h-9 rounded border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition"
                                     aria-label="Add to wishlist"
                                 >
-                                    <Heart className="w-4 h-4 text-gray-600" />
+                                    <Heart className={`w-4 h-4 transition-colors ${isFavorite ? "fill-red-500 text-red-500" : "text-gray-600"}`} />
                                 </button>
                             </div>
 

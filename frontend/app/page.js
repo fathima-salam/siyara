@@ -2,6 +2,8 @@ import Header from "@/components/Header";
 import Hero from "@/components/Hero";
 import CategorySection from "@/components/CategorySection";
 import FeaturedProducts from "@/components/FeaturedProducts";
+import StylingGuide from "@/components/StylingGuide";
+import FAQ from "@/components/FAQ";
 import Footer from "@/components/Footer";
 
 export default function Home() {
@@ -26,13 +28,15 @@ export default function Home() {
 
       <FeaturedProducts />
 
+      <StylingGuide />
+
       {/* Another Promotional CTA */}
       <section className="grid grid-cols-1 lg:grid-cols-2">
         <div className="bg-secondary p-20 flex flex-col justify-center items-start text-left">
           <p className="text-[10px] uppercase tracking-[0.4em] font-bold mb-6 text-accent">New Arrivals</p>
-          <h2 className="text-3xl md:text-5xl font-bold uppercase mb-8 tracking-tight">Premium hijabs & modest wear</h2>
+          <h2 className="text-3xl md:text-5xl font-bold uppercase mb-8 tracking-tight">Premium hijabs & jewellery</h2>
           <p className="text-gray-600 mb-10 max-w-md leading-relaxed">
-            Elevate your modest wardrobe with our curated hijabs, scarves and abayas—quality fabrics and timeless styles for every occasion.
+            Elevate your lifestyle with our curated hijabs and timeless diamond jewellery pieces—crafted with excellence for every occasion.
           </p>
           <button className="btn-outline">Shop Hijabs</button>
         </div>
@@ -43,6 +47,8 @@ export default function Home() {
           />
         </div>
       </section>
+
+      <FAQ />
 
       <Footer />
     </main>

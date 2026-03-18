@@ -22,6 +22,7 @@ const orders = {
   stats: "/orders/stats",
   byId: (id) => `/admin/orders/${id}`,
   status: (id) => `/admin/orders/${id}/status`,
+  bulkStatus: "/admin/orders/bulk-update",
   deliveryDate: (id) => `/admin/orders/${id}/delivery-date`,
   return: (id) => `/admin/orders/${id}/return`,
 };

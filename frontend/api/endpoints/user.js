@@ -5,6 +5,8 @@ const users = {
   login: "/users/login",
   register: "/users",
   profile: "/users/profile",
+  sendOTP: "/users/send-otp",
+  verifyOTP: "/users/verify-otp",
 };
 
 const products = {

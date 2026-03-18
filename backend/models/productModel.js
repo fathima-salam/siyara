@@ -28,6 +28,8 @@ const productSchema = new mongoose.Schema(
     category: { type: String, required: true, trim: true },
     brand: { type: String, required: true, trim: true },
     description: { type: String, default: '' },
+    stone: { type: String, trim: true },
+    gender: { type: String, trim: true, enum: ['Men', 'Women', 'Unisex'] },
     pricing: { type: pricingSchema, required: true },
     variants: [variantSchema],
     thumbnails: [{ type: String, trim: true }],
@@ -44,6 +46,8 @@ const productSchema = new mongoose.Schema(
 // productId already has unique: true (creates index).
 productSchema.index({ product: 1, category: 1 });
 productSchema.index({ status: 1 });
+productSchema.index({ stone: 1 });
+productSchema.index({ gender: 1 });
 
 productSchema.pre('save', function () {
   if (this.variants && this.variants.length > 0) {

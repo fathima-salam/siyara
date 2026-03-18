@@ -3,20 +3,54 @@
 import SafeImage from "./SafeImage";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ShoppingBag } from "lucide-react";
+import { ShoppingBag, Heart } from "lucide-react";
 import { motion } from "framer-motion";
 import { useCartStore } from "@/store/useCartStore";
 import { useAuthStore } from "@/store/useAuthStore";
+import { useWishlistStore } from "@/store/useWishlistStore";
 
-export default function ProductCard({ product }) {
+export default function ProductCard({ product, activeColor }) {
     const { addItem } = useCartStore();
     const userInfo = useAuthStore((s) => s.userInfo);
+    const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlistStore();
     const router = useRouter();
     const pathname = usePathname();
 
-    const price = product.pricing?.offerPrice ?? product.pricing?.sellingPrice ?? product.price ?? 0;
-    const imageSrc = product.thumbnails?.[0] || product.variants?.[0]?.images?.[0] || product.images?.[0];
-    const displayName = product.productName ?? product.name;
+    if (!product) return null;
+
+    const sellingPrice = product.pricing?.sellingPrice ?? product.price ?? 0;
+    const offerPrice = product.pricing?.offerPrice ?? sellingPrice;
+    const hasDiscount = offerPrice < sellingPrice;
+    const discountPercentage = hasDiscount 
+        ? Math.round(((sellingPrice - offerPrice) / sellingPrice) * 100) 
+        : 0;
+
+    // Find the variant matching the active filter color
+    let activeVariant = null;
+    if (activeColor) {
+        const selectedColors = activeColor.split(',').map(c => c.trim().toLowerCase());
+        activeVariant = product.variants?.find(v => selectedColors.includes(v.color?.toLowerCase()));
+    }
+
+    const imageSrc = activeVariant?.images?.[0] || product.thumbnails?.[0] || product.variants?.[0]?.images?.[0] || product.images?.[0];
+    const brandName = product.brand || "";
+    const displayName = (product.productName ?? product.name) || "Unnamed Product";
+
+    const isFavorite = isInWishlist(product._id);
+
+    const toggleWishlist = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!userInfo?.token) {
+            router.push(`/login?redirect=${encodeURIComponent(pathname || "/shop")}`);
+            return;
+        }
+        if (isFavorite) {
+            removeFromWishlist(product._id);
+        } else {
+            addToWishlist(product);
+        }
+    };
 
     const addToCartHandler = (e) => {
         e.preventDefault();
@@ -26,23 +60,27 @@ export default function ProductCard({ product }) {
             router.push(redirect);
             return;
         }
+        
+        // Use the active color variant if it exists, else use the first one
+        const selectedVariant = activeVariant || product.variants?.[0];
+
         addItem({
             ...product,
             qty: 1,
             size: product.sizes?.[0] || "",
-            color: product.variants?.[0]?.color || product.colors?.[0] || "Black"
+            color: selectedVariant?.color || "Black"
         });
     };
 
     return (
         <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 10 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: 0.4 }}
             className="group relative"
         >
-            <div className="relative aspect-[3/4] overflow-hidden bg-gray-100">
+            <div className="relative aspect-[3/4] overflow-hidden bg-gray-50">
                 <Link href={`/product/${product._id}`} className="block w-full h-full">
                     <SafeImage
                         src={imageSrc}
@@ -52,33 +90,49 @@ export default function ProductCard({ product }) {
                     />
                 </Link>
 
+                <button
+                    onClick={toggleWishlist}
+                    className="absolute top-2 right-2 z-10 p-1 text-primary hover:scale-110 transition-all group/heart"
+                >
+                    <Heart className={`w-3.5 h-3.5 transition-colors ${isFavorite ? "fill-red-500 text-red-500" : "text-primary group-hover/heart:text-red-500"}`} />
+                </button>
+
                 {product.isNew && (
-                    <span className="absolute top-4 left-4 bg-white text-primary px-3 py-1 text-[10px] font-bold uppercase tracking-widest">
-                        New Arrival
+                    <span className="absolute top-2 left-2 bg-white text-primary px-1.5 py-0.5 text-[7px] font-bold uppercase tracking-widest leading-none">
+                        New
                     </span>
                 )}
 
                 <button
                     onClick={addToCartHandler}
-                    className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white text-primary w-[calc(100%-2rem)] py-3 text-[10px] font-bold uppercase tracking-widest opacity-0 translate-y-4 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0 hover:bg-primary hover:text-white flex items-center justify-center space-x-2"
+                    className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-white text-primary w-[calc(100%-1rem)] py-1.5 text-[7px] font-bold uppercase tracking-widest opacity-0 translate-y-1 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0 hover:bg-primary hover:text-white flex items-center justify-center space-x-1"
                 >
-                    <ShoppingBag className="w-4 h-4" />
-                    <span>Quick Add</span>
+                    <ShoppingBag className="w-2.5 h-2.5" />
+                    <span className="hidden xs:inline">Add</span>
                 </button>
             </div>
 
-            <div className="mt-6 text-center">
-                <p className="text-[10px] uppercase tracking-[0.2em] text-gray-400 font-bold mb-2">
-                    {product.category}
-                </p>
+            <div className="mt-2 text-center px-1">
+                {brandName && (
+                    <p className="text-[7px] uppercase tracking-[0.1em] text-gray-400 font-bold mb-0.5 truncate">
+                        {brandName}
+                    </p>
+                )}
                 <Link href={`/product/${product._id}`}>
-                    <h3 className="text-sm font-bold uppercase tracking-wider group-hover:text-accent transition-colors">
+                    <h3 className="text-[9px] md:text-[10px] font-bold uppercase tracking-wider group-hover:text-accent transition-colors truncate">
                         {displayName}
                     </h3>
                 </Link>
-                <p className="mt-2 text-sm font-medium">
-                    ₹{Number(price).toFixed(2)}
-                </p>
+                <div className="flex items-center justify-center gap-2 mt-0.5">
+                    <span className="text-[9px] md:text-[10px] font-bold">
+                        ₹{Number(offerPrice).toLocaleString('en-IN', { minimumFractionDigits: 0 })}
+                    </span>
+                    {hasDiscount && (
+                        <span className="text-[8px] md:text-[9px] text-gray-400 line-through">
+                            ₹{Number(sellingPrice).toLocaleString('en-IN', { minimumFractionDigits: 0 })}
+                        </span>
+                    )}
+                </div>
             </div>
         </motion.div>
     );

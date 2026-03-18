@@ -38,14 +38,43 @@ const addOrderItems = asyncHandler(async (req, res) => {
     res.status(201).json(createdOrder);
 });
 
+const remapOrder = (order) => {
+    const po = order.toObject();
+    po.user = po.customerId;
+    po.orderItems = (po.items || []).map((it) => {
+        const p = it.productId;
+        const name = p?.productName || p?.product || 'Product';
+        const image = p?.thumbnails?.[0] || p?.variants?.[0]?.images?.[0];
+        return { 
+            name, 
+            image, 
+            qty: it.quantity, 
+            price: it.price, 
+            color: it.color, 
+            size: it.size || '',
+            product: it.productId?._id || it.productId
+        };
+    });
+    po.totalPrice = po.finalPrice;
+    po.itemsPrice = po.total;
+    po.shippingPrice = po.deliveryAmount;
+    po.orderStatus = po.status; // Add this for frontend compatibility
+    po.isPaid = po.transactionDetails?.paymentStatus === 'paid';
+    po.paidAt = po.transactionId ? po.updatedAt : null;
+    po.isDelivered = po.status === 'delivered';
+    return po;
+};
+
 // @desc    Get logged in user orders
 // @route   GET /api/orders/myorders
 // @access  Private
 const getMyOrders = asyncHandler(async (req, res) => {
     const orders = await Order.find({ customerId: req.user._id })
         .populate('items.productId', 'productName product thumbnails variants')
-        .sort({ orderDate: -1 });
-    res.json(orders);
+        .sort({ createdAt: -1 });
+    
+    const remappedOrders = orders.map(remapOrder);
+    res.json(remappedOrders);
 });
 
 // @desc    Get order by ID
@@ -56,21 +85,7 @@ const getOrderById = asyncHandler(async (req, res) => {
         .populate('customerId', 'name email')
         .populate('items.productId', 'productName product thumbnails variants');
     if (order) {
-        const po = order.toObject();
-        po.user = po.customerId;
-        po.orderItems = (po.items || []).map((it) => {
-            const p = it.productId;
-            const name = p?.productName || p?.product || 'Product';
-            const image = p?.thumbnails?.[0] || p?.variants?.[0]?.images?.[0];
-            return { name, image, qty: it.quantity, price: it.price, color: it.color, size: it.size || '' };
-        });
-        po.totalPrice = po.finalPrice;
-        po.itemsPrice = po.total;
-        po.shippingPrice = po.deliveryAmount;
-        po.isPaid = po.transactionDetails?.paymentStatus === 'paid';
-        po.paidAt = po.transactionId ? new Date() : null;
-        po.isDelivered = po.status === 'delivered';
-        res.json(po);
+        res.json(remapOrder(order));
     } else {
         res.status(404);
         throw new Error('Order not found');

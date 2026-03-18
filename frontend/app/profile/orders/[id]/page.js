@@ -12,17 +12,20 @@ import {
     CheckCircle, 
     Truck, 
     XCircle,
-    Info
+    Info,
+    RotateCcw
 } from "lucide-react";
 import Link from "next/link";
 import SafeImage from "@/components/SafeImage";
 
 const STATUS_CONFIG = {
-    "Pending": { icon: Clock, color: "text-amber-500", label: "Order Received" },
-    "Processing": { icon: Package, color: "text-blue-500", label: "Processing" },
-    "Shipped": { icon: Truck, color: "text-purple-500", label: "In Transit" },
-    "Delivered": { icon: CheckCircle, color: "text-emerald-500", label: "Delivered" },
-    "Cancelled": { icon: XCircle, color: "text-red-500", label: "Cancelled" },
+    "order placed": { icon: Clock, color: "text-amber-500", label: "Order Received" },
+    "shipped": { icon: Truck, color: "text-purple-500", label: "In Transit" },
+    "out for delivery": { icon: Truck, color: "text-blue-500", label: "Out for Delivery" },
+    "delivered": { icon: CheckCircle, color: "text-emerald-500", label: "Delivered" },
+    "cancelled": { icon: XCircle, color: "text-red-500", label: "Cancelled" },
+    "return requested": { icon: RotateCcw, color: "text-amber-600", label: "Return Requested" },
+    "returned": { icon: RotateCcw, color: "text-gray-500", label: "Returned" },
 };
 
 export default function OrderDetailsPage({ params: paramsPromise }) {
@@ -34,7 +37,7 @@ export default function OrderDetailsPage({ params: paramsPromise }) {
     useEffect(() => {
         const fetchOrderDetails = async () => {
             try {
-                const data = await orderService.getOrderDetails(orderId);
+                const data = await orderService.getById(orderId);
                 setOrder(data);
             } catch (error) {
                 console.error("Error fetching order details:", error);
@@ -64,8 +67,8 @@ export default function OrderDetailsPage({ params: paramsPromise }) {
     );
 
     const items = order.orderItems || order.items || [];
-    const status = order.orderStatus || "Pending";
-    const config = STATUS_CONFIG[status] || STATUS_CONFIG.Pending;
+    const status = order.orderStatus || order.status || "order placed";
+    const config = STATUS_CONFIG[status] || STATUS_CONFIG["order placed"];
 
     return (
         <DashboardLayout>

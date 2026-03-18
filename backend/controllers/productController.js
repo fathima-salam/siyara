@@ -16,17 +16,46 @@ const getProducts = asyncHandler(async (req, res) => {
         ];
     }
     if (req.query.category) filter.category = req.query.category;
+    if (req.query.stone) filter.stone = req.query.stone;
+    if (req.query.gender) filter.gender = req.query.gender;
+    
+    // Handle multi-select brands
+    if (req.query.brand) {
+        const brands = req.query.brand.split(',').map(b => b.trim());
+        filter.brand = { $in: brands };
+    }
+
+    // Handle multi-select colors
+    if (req.query.color) {
+        const colors = req.query.color.split(',').map(c => c.trim());
+        filter['variants.color'] = { 
+            $in: colors.map(c => new RegExp(`^${c}$`, 'i')) 
+        };
+    }
+
     // Classify by schema field "product" (e.g. Hijabs, Accessories, Earring, Rings, Necklace)
     if (req.query.product) {
         const p = String(req.query.product).trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         if (p) filter.product = new RegExp(`^${p}$`, 'i');
     }
+
     const minPrice = req.query.minPrice ? Number(req.query.minPrice) : null;
     const maxPrice = req.query.maxPrice ? Number(req.query.maxPrice) : null;
-    if (minPrice != null || maxPrice != null) {
+    const priceRange = req.query.priceRange;
+
+    let finalMin = minPrice;
+    let finalMax = maxPrice;
+
+    if (priceRange) {
+        const [min, max] = priceRange.split('-').map(Number);
+        if (!isNaN(min)) finalMin = min;
+        if (!isNaN(max)) finalMax = max;
+    }
+
+    if (finalMin != null || finalMax != null) {
         filter['pricing.sellingPrice'] = {};
-        if (minPrice != null) filter['pricing.sellingPrice'].$gte = minPrice;
-        if (maxPrice != null) filter['pricing.sellingPrice'].$lte = maxPrice;
+        if (finalMin != null) filter['pricing.sellingPrice'].$gte = finalMin;
+        if (finalMax != null) filter['pricing.sellingPrice'].$lte = finalMax;
     }
 
     let sort = { createdAt: -1 };
@@ -152,4 +181,25 @@ const createProductReview = asyncHandler(async (req, res) => {
     }
 });
 
-export { getProducts, getFeaturedProducts, getProductById, createProduct, updateProduct, deleteProduct, createProductReview };
+// @desc    Get all unique brands from products
+// @route   GET /api/products/brands
+// @access  Public
+const getBrands = asyncHandler(async (req, res) => {
+    const brands = await Product.distinct('brand', { brand: { $ne: null, $ne: '' } });
+    res.json(brands.sort());
+});
+
+// @desc    Get all unique colors from product variants
+// @route   GET /api/products/colors
+// @access  Public
+const getColors = asyncHandler(async (req, res) => {
+    const rawColors = await Product.distinct('variants.color', { 'variants.color': { $ne: null, $ne: '' } });
+    // Normalize: trim, lowercase, then title-case unique values
+    const normalized = [...new Set(rawColors.map(c => {
+        const trimmed = c.trim().toLowerCase();
+        return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+    }))];
+    res.json(normalized.sort());
+});
+
+export { getProducts, getFeaturedProducts, getProductById, createProduct, updateProduct, deleteProduct, createProductReview, getBrands, getColors };

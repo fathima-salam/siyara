@@ -29,15 +29,24 @@ const categories = [
 
 export default function CategorySection() {
     return (
-        <section className="py-12 md:py-20 bg-white">
-            <div className="container mx-auto px-6 mb-12 text-center">
-                <h2 className="text-4xl md:text-5xl font-bold uppercase tracking-widest text-primary">
-                    OUR COLLECTIONS
-                </h2>
+        <section className="relative pt-20 md:pt-32 pb-12 md:pb-20 overflow-hidden bg-primary">
+            {/* Background Image - matches Hero for seamless transition */}
+            <div className="absolute inset-0 z-0">
+                <div
+                    className="w-full h-full bg-cover bg-center bg-fixed opacity-60"
+                    style={{ backgroundImage: "url('/banner.png')" }}
+                />
             </div>
+
+            <div className="container mx-auto px-4 md:px-8 lg:px-12 relative z-10">
+                <div className="mb-12 text-center text-white">
+                    <h2 className="text-4xl md:text-5xl font-bold uppercase tracking-widest">
+                        OUR COLLECTIONS
+                    </h2>
+                </div>
             
-            <div className="w-full px-2">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-2 auto-rows-[400px] md:auto-rows-[65vh]">
+            <div className="w-full px-0">
+                <div className="grid grid-cols-4 lg:grid-cols-4 gap-6 auto-rows-[400px] md:auto-rows-[65vh]">
                     {categories.map((cat, index) => (
                         <motion.div
                             key={index}
@@ -70,6 +79,7 @@ export default function CategorySection() {
                             </div>
                         </motion.div>
                     ))}
+                </div>
                 </div>
             </div>
         </section>

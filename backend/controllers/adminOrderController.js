@@ -22,6 +22,7 @@ export const getAllOrders = asyncHandler(async (req, res) => {
   const filter = status && VALID_STATUSES.includes(status) ? { status } : {};
   const orders = await Order.find(filter)
     .populate('customerId', 'name email phone')
+    .populate('items.productId', 'productName productId thumbnails variants.images')
     .sort({ createdAt: -1 });
   res.json(orders);
 });
@@ -37,7 +38,7 @@ export const getOrderById = asyncHandler(async (req, res) => {
   }
   const order = await Order.findById(req.params.id)
     .populate('customerId', 'name email phone addresses')
-    .populate('items.productId', 'productName productId thumbnails');
+    .populate('items.productId', 'productName productId thumbnails variants.images');
   if (!order) {
     res.status(404);
     throw new Error('Order not found');
@@ -134,4 +135,37 @@ export const handleReturnRequest = asyncHandler(async (req, res) => {
 
   await order.save();
   res.json(order);
+});
+
+/**
+ * @route   PATCH /api/admin/orders/bulk-update
+ * @desc    Bulk update order statuses (admin)
+ */
+export const bulkUpdateOrderStatus = asyncHandler(async (req, res) => {
+  const { orderIds, status } = req.body;
+
+  if (!Array.isArray(orderIds) || orderIds.length === 0) {
+    res.status(400);
+    throw new Error('No order IDs provided');
+  }
+
+  if (!status || !VALID_STATUSES.includes(status)) {
+    res.status(400);
+    throw new Error(`Invalid status. Use one of: ${VALID_STATUSES.join(', ')}`);
+  }
+
+  const result = await Order.updateMany(
+    { _id: { $in: orderIds } },
+    { $set: { status } }
+  );
+
+  // If status is delivered, we might want to update deliveryDate too
+  if (status === 'delivered') {
+    await Order.updateMany(
+      { _id: { $in: orderIds }, deliveryDate: { $exists: false } },
+      { $set: { deliveryDate: new Date() } }
+    );
+  }
+
+  res.json({ message: 'Bulk update successful', modifiedCount: result.modifiedCount });
 });

@@ -31,9 +31,9 @@ export default function FeaturedProducts() {
     );
 
     return (
-        <section className="py-24 bg-white">
-            <div className="container mx-auto px-6">
-                <div className="text-center mb-16">
+        <section className="py-24 bg-white border-t border-gray-100">
+            <div className="container mx-auto px-4 md:px-8 lg:px-12">
+                <div className="text-center mb-16 px-4">
                     <motion.p
                         initial={{ opacity: 0, y: 10 }}
                         whileInView={{ opacity: 1, y: 0 }}
@@ -53,9 +53,9 @@ export default function FeaturedProducts() {
                 </div>
 
                 {featuredProducts.length === 0 ? (
-                    <p className="text-gray-500 text-sm uppercase tracking-widest">No featured products yet. Add active products in the database.</p>
+                    <p className="text-gray-500 text-sm uppercase tracking-widest text-center">No featured products yet. Add active products in the database.</p>
                 ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                    <div className="grid grid-cols-4 md:grid-cols-4 lg:grid-cols-4 gap-2 md:gap-4 lg:gap-8">
                         {featuredProducts.map((product) => (
                             <ProductCard key={product._id} product={product} />
                         ))}

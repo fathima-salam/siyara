@@ -16,6 +16,9 @@ export const adminOrderService = {
   updateStatus: (id, status) =>
     client.patch(e.status(id), { status }).then((res) => res.data),
 
+  bulkUpdateStatus: (orderIds, status) =>
+    client.patch(e.bulkStatus, { orderIds, status }).then((res) => res.data),
+
   updateDeliveryDate: (id, deliveryDate) =>
     client.patch(e.deliveryDate(id), { deliveryDate }).then((res) => res.data),
 

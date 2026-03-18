@@ -1,6 +1,7 @@
 import asyncHandler from '../middleware/asyncHandler.js';
 import generateToken from '../utils/generateToken.js';
 import User from '../models/userModel.js';
+import Otp from '../models/otpModel.js';
 
 // @desc    Auth user & get token
 // @route   POST /api/users/login
@@ -159,4 +160,78 @@ const updateUser = asyncHandler(async (req, res) => {
     }
 });
 
-export { authUser, registerUser, getUserProfile, updateUserProfile, getUsers, getUserById, deleteUser, updateUser };
+// @desc    Send OTP to phone
+// @route   POST /api/users/send-otp
+// @access  Public
+const sendOTP = asyncHandler(async (req, res) => {
+    const { phone } = req.body;
+
+    if (!phone) {
+        res.status(400);
+        throw new Error('Phone number is required');
+    }
+
+    // Generate 6 digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Save OTP to DB (replaces if exists for same phone due to model design, but we'll just create new entries as TTL handles cleanup)
+    await Otp.create({ phone, otp });
+
+    // Mock SMS sending - for production, use Twilio here
+    console.log(`[SMS MOCK] Sending OTP ${otp} to phone number ${phone}`);
+
+    res.status(200).json({
+        success: true,
+        message: 'OTP sent successfully',
+        otp: process.env.NODE_ENV === 'development' ? otp : undefined // Return OTP only in dev mode for easy testing
+    });
+});
+
+// @desc    Verify OTP and Log in/Sign up
+// @route   POST /api/users/verify-otp
+// @access  Public
+const verifyOTP = asyncHandler(async (req, res) => {
+    const { phone, otp } = req.body;
+
+    if (!phone || !otp) {
+        res.status(400);
+        throw new Error('Phone and OTP are required');
+    }
+
+    // Find the latest OTP for this phone
+    const otpRecord = await Otp.findOne({ phone, otp }).sort({ createdAt: -1 });
+
+    if (!otpRecord) {
+        res.status(400);
+        throw new Error('Invalid or expired OTP');
+    }
+
+    // Find user or create new one
+    let user = await User.findOne({ phone });
+
+    if (!user) {
+        // Create a new user with default name if it doesn't exist
+        user = await User.create({
+            name: `User ${phone.slice(-4)}`,
+            phone,
+            isPhoneVerified: true
+        });
+    } else {
+        user.isPhoneVerified = true;
+        await user.save();
+    }
+
+    // Delete OTP record after successful verification
+    await Otp.deleteOne({ _id: otpRecord._id });
+
+    res.json({
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        isAdmin: user.isAdmin,
+        token: generateToken(user._id),
+    });
+});
+
+export { authUser, registerUser, getUserProfile, updateUserProfile, getUsers, getUserById, deleteUser, updateUser, sendOTP, verifyOTP };

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuthStore } from "@/store/useAuthStore";
 import Sidebar from "@/components/admin/Sidebar";
+import { Toaster } from "react-hot-toast";
 
 export default function AdminLayout({ children }) {
     const { userInfo } = useAuthStore();
@@ -42,6 +43,7 @@ export default function AdminLayout({ children }) {
         <div className="flex min-h-screen bg-white">
             <Sidebar />
             <main className="flex-1 ml-52 p-6 bg-secondary/30">
+                <Toaster position="bottom-right" />
                 {children}
             </main>
         </div>

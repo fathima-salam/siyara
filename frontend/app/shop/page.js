@@ -9,9 +9,9 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Image from "next/image";
 
 import { productService } from "@/api";
+import FilterSidebar from "@/components/FilterSidebar";
+import CategoryFilterBar from "@/components/CategoryFilterBar";
 
-// Product types from schema field "product" (classification), not productName
-const PRODUCT_FILTERS = ["All", "Hijabs", "Accessories", "Earring", "Rings", "Necklace", "Scarves", "Abayas"];
 
 // Banner poster per category: image from public/images/, description, text position (used in shop banner)
 const posterimages = {
@@ -45,16 +45,6 @@ const posterimages = {
         description: "Elegant circles of style and charm.",
         textpositions: "center",
     },
-    scarves: {
-        image: "/images/scarves.png",
-        description: "Lightweight elegance for every season.",
-        textpositions: "center",
-    },
-    abayas: {
-        image: "/images/abayas.png",
-        description: "Modest grace in every fold.",
-        textpositions: "left",
-    },
 };
 
 // Map filter label -> poster key
@@ -62,38 +52,64 @@ const FILTER_TO_POSTER_KEY = {
     All: "all",
     Hijabs: "hijab",
     Accessories: "accessories",
-    Earrings: "earrings",
+    Earring: "earrings",
     Rings: "rings",
-    Necklaces: "necklaces",
-    Scarves: "scarves",
-    Abayas: "abayas",
+    Necklace: "necklaces",
 };
+
 
 export default function ShopPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const keyword = searchParams.get("search") || "";
-    const productFromUrl = searchParams.get("product") || searchParams.get("category") || "";
 
     const [products, setProducts] = useState([]);
+    const [brands, setBrands] = useState([]);
+    const [colors, setColors] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [filter, setFilter] = useState(() =>
-        productFromUrl && PRODUCT_FILTERS.includes(productFromUrl) ? productFromUrl : "All"
-    );
+    const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [sortBy, setSortBy] = useState("Newest");
 
-    // Keep filter in sync when URL changes
+    // Derive active filters from URL searchParams
+    const activeFilters = {};
+    searchParams.forEach((value, key) => {
+        if (["product", "color", "stone", "gender", "priceRange", "brand"].includes(key)) {
+            activeFilters[key] = value;
+        }
+    });
+
+    const handleFilterChange = (newFilters) => {
+        const q = new URLSearchParams();
+        if (keyword) q.set("search", keyword);
+        Object.entries(newFilters).forEach(([key, value]) => {
+            if (value) q.set(key, value);
+        });
+        const queryString = q.toString();
+        router.replace(queryString ? `/shop?${queryString}` : "/shop", { scroll: false });
+    };
+
+    // Fetch Unique Brands and Colors on Mount
     useEffect(() => {
-        const urlProduct = searchParams.get("product") || searchParams.get("category") || "";
-        if (urlProduct && PRODUCT_FILTERS.includes(urlProduct)) setFilter(urlProduct);
-    }, [searchParams]);
+        const fetchFilters = async () => {
+            try {
+                const [brandData, colorData] = await Promise.all([
+                    productService.getBrands(),
+                    productService.getColors()
+                ]);
+                setBrands(Array.isArray(brandData) ? brandData : []);
+                setColors(Array.isArray(colorData) ? colorData : []);
+            } catch (err) {
+                console.error("Error fetching filters:", err);
+            }
+        };
+        fetchFilters();
+    }, []);
 
     useEffect(() => {
         const fetchProducts = async () => {
             setLoading(true);
             try {
-                const params = { pageSize: 40 };
-                if (filter !== "All") params.product = filter;
+                const params = { pageSize: 40, ...activeFilters };
                 if (keyword) params.keyword = keyword;
                 if (sortBy === "Price: Low to High") params.sort = "price_asc";
                 if (sortBy === "Price: High to Low") params.sort = "price_desc";
@@ -108,18 +124,16 @@ export default function ShopPage() {
             }
         };
         fetchProducts();
-    }, [filter, keyword, sortBy]);
-
-    // We no longer return early here so that the layout (Header, Banner, Filters) is visible
-    // if (loading) return ... 
+    }, [searchParams, sortBy]);
 
     return (
         <main className="min-h-screen bg-white">
             <Header />
 
-            {/* Banner: image, description and text position from posterimages by category */}
+            {/* Banner */}
             {(() => {
-                const posterKey = FILTER_TO_POSTER_KEY[filter] || "all";
+                const activeCategory = activeFilters.product || "All";
+                const posterKey = FILTER_TO_POSTER_KEY[activeCategory] || "all";
                 const poster = posterimages[posterKey] || posterimages.all;
                 const pos = (poster.textpositions || "center").toLowerCase();
                 const textAlign = pos === "left" ? "text-left" : pos === "right" ? "text-right" : "text-center";
@@ -130,25 +144,24 @@ export default function ShopPage() {
                             {poster.image && (
                                 <Image
                                     src={poster.image}
-                                    alt={filter}
+                                    alt={activeCategory}
                                     fill
                                     priority
                                     className="object-cover object-center"
                                     sizes="100vw"
                                 />
                             )}
-                            {/* Subtle dark overlay for text legibility */}
                             <div className="absolute inset-0 bg-black/10 z-0" />
                         </div>
 
                         <div className={`absolute inset-0 z-10 flex ${justify} items-center px-6 md:px-12 lg:px-24`}>
                             <div className={`max-w-2xl ${textAlign} drop-shadow-sm`}>
-                                {filter !== "All" && (
+                                {activeCategory !== "All" && (
                                     <h1 className="text-2xl md:text-4xl lg:text-5xl font-black uppercase tracking-tighter mb-4 text-white drop-shadow-2xl">
-                                        {filter}
+                                        {activeCategory}
                                     </h1>
                                 )}
-                                <p className={`text-white font-bold drop-shadow-lg ${filter === "All" ? "text-lg md:text-xl lg:text-2xl" : "text-sm md:text-base lg:text-lg"}`}>
+                                <p className={`text-white font-bold drop-shadow-lg ${activeCategory === "All" ? "text-lg md:text-xl lg:text-2xl" : "text-sm md:text-base lg:text-lg"}`}>
                                     {poster.description}
                                 </p>
                             </div>
@@ -157,76 +170,61 @@ export default function ShopPage() {
                 );
             })()}
 
-            <section className="py-20">
-                <div className="container mx-auto px-6">
-                    {/* Controls: filter by schema "product" (All, Hijabs, Accessories, Earring, Rings, Necklace) */}
-                    <div className="flex flex-col md:flex-row justify-between items-center mb-12 border-b border-gray-100 pb-8 space-y-4 md:space-y-0">
-                        <div className="flex items-center gap-6 md:gap-8 flex-wrap">
-                        <div className="flex items-center gap-4 text-primary shrink-0">
-                                <Filter className="w-4 h-4" />
-                                <span className="text-[10px] tracking-[0.3em] font-black">FILTER</span>
-                            </div>
-                            <div className="flex items-center gap-4 md:gap-6 flex-wrap">
-                                {PRODUCT_FILTERS.map((cat) => (
-                                    <button
-                                        key={cat}
-                                        onClick={() => {
-                                            setFilter(cat);
-                                            const q = new URLSearchParams(searchParams.toString());
-                                            if (cat === "All") q.delete("product"); else q.set("product", cat);
-                                            q.delete("category");
-                                            router.replace(q.toString() ? `/shop?${q.toString()}` : "/shop", { scroll: false });
-                                        }}
-                                        className={`text-[10px] uppercase tracking-[0.2em] font-bold py-1 border-b-2 transition-all ${filter === cat ? "border-accent text-primary" : "border-transparent text-gray-400 hover:text-primary"
-                                            }`}
-                                    >
-                                        {cat}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
+            <section className="border-t border-gray-100 pt-10 md:pt-20 pb-12">
+                <div className="w-full px-4 md:px-8 lg:px-12">
+                    <div className="flex flex-col lg:flex-row gap-0 lg:gap-8 items-start min-h-[800px]">
+                        {/* Sidebar */}
+                        <FilterSidebar 
+                            filters={activeFilters} 
+                            brands={brands}
+                            colors={colors}
+                            onFilterChange={handleFilterChange} 
+                            isOpen={isFilterOpen}
+                            onClose={() => setIsFilterOpen(false)}
+                        />
 
-                        <div className="flex items-center space-x-4 relative group">
-                            <p className="text-[10px] uppercase tracking-widest text-gray-400 font-bold">Sort By:</p>
-                            <button className="text-[10px] uppercase tracking-[0.2em] font-bold flex items-center space-x-1 hover:text-accent transition-colors">
-                                <span>{sortBy}</span>
-                                <ChevronDown className="w-3 h-3 transition-transform group-hover:rotate-180" />
-                            </button>
-                            <div className="absolute top-full right-0 mt-2 bg-white border border-gray-100 shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20 min-w-[200px]">
-                                {["Newest", "Price: Low to High", "Price: High to Low"].map((option) => (
-                                    <button
-                                        key={option}
-                                        onClick={() => setSortBy(option)}
-                                        className="w-full text-left px-6 py-4 text-[10px] uppercase tracking-widest font-bold hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0"
-                                    >
-                                        {option}
-                                    </button>
-                                ))}
+                        {/* Main Content */}
+                        <div className="flex-1 min-w-0">
+                            {/* Category Navigator (Text-only version) */}
+                            <CategoryFilterBar 
+                                activeCategory={activeFilters.product}
+                                onCategoryChange={(cat) => {
+                                    const newFilters = { ...activeFilters };
+                                    if (cat) newFilters.product = cat;
+                                    else delete newFilters.product;
+                                    handleFilterChange(newFilters);
+                                }}
+                            />
+
+
+                            {/* Grid */}
+                            <div className="px-0">
+                                {loading ? (
+                                    <div className="py-24 text-center">
+                                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+                                    </div>
+                                ) : products.length === 0 ? (
+                                    <div className="py-20 text-center flex flex-col items-center">
+                                        <SearchX className="w-12 h-12 text-gray-200 mb-6" />
+                                        <p className="text-gray-500 uppercase tracking-widest font-bold text-xs mb-8">
+                                            {keyword ? `No products found for "${keyword}"` : "No products matching filters"}
+                                        </p>
+                                        <button onClick={() => handleFilterChange({})} className="btn-primary">Clear Filters</button>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-4 lg:grid-cols-4 gap-2 md:gap-4 lg:gap-6 pb-20">
+                                        {products.map((product) => (
+                                            <ProductCard 
+                                                key={product._id} 
+                                                product={product} 
+                                                activeColor={activeFilters.color}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
-
-                    {/* Grid */}
-                    {loading ? (
-                        <div className="py-24 text-center">
-                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-                        </div>
-                    ) : products.length === 0 ? (
-                        <div className="py-20 text-center flex flex-col items-center">
-                            <SearchX className="w-12 h-12 text-gray-200 mb-6" />
-                            <p className="text-gray-500 uppercase tracking-widest font-bold text-xs mb-8">
-                                {keyword ? `No products found for "${keyword}"` : filter !== "All" ? `No products in ${filter}` : "No products available"}
-                            </p>
-                            <button onClick={() => setFilter("All")} className="btn-primary">Clear Filters</button>
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-y-16 gap-x-8">
-                            {products.map((product) => (
-                                <ProductCard key={product._id} product={product} />
-                            ))}
-                        </div>
-                    )}
-
                 </div>
             </section>
 

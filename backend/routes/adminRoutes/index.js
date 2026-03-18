@@ -25,6 +25,7 @@ import {
   updateOrderStatus,
   updateDeliveryDate,
   handleReturnRequest,
+  bulkUpdateOrderStatus,
 } from '../../controllers/adminOrderController.js';
 import {
   getWalletByUserId,
@@ -73,6 +74,7 @@ router.delete('/products/:id', deleteProduct);
 
 // ---------- Orders ----------
 router.get('/orders', getAllOrders);
+router.patch('/orders/bulk-update', bulkUpdateOrderStatus);
 router.get('/orders/:id', getOrderById);
 router.patch('/orders/:id/status', updateOrderStatus);
 router.patch('/orders/:id/delivery-date', updateDeliveryDate);

@@ -15,6 +15,12 @@ export const authService = {
 
   updateProfile: (data) =>
     client.put(e.profile, data).then((res) => res.data),
+  
+  sendOTP: (phone) =>
+    client.post(e.sendOTP, { phone }).then((res) => res.data),
+
+  verifyOTP: (phone, otp) =>
+    client.post(e.verifyOTP, { phone, otp }).then((res) => res.data),
 };
 
 export default authService;

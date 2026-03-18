@@ -18,9 +18,10 @@ const addressSchema = new mongoose.Schema(
 const userSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
-    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
-    phone: { type: String, trim: true },
-    password: { type: String, required: true, select: false },
+    email: { type: String, unique: true, lowercase: true, trim: true, sparse: true },
+    phone: { type: String, trim: true, unique: true, sparse: true },
+    isPhoneVerified: { type: Boolean, default: false },
+    password: { type: String, select: false },
     addresses: [addressSchema],
     cartId: { type: mongoose.Schema.Types.ObjectId, ref: 'Cart', default: null },
     wishlistId: { type: mongoose.Schema.Types.ObjectId, ref: 'Wishlist', default: null },
@@ -31,8 +32,6 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// email already has unique: true (creates index). Only add index for phone.
-userSchema.index({ phone: 1 });
 
 userSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);

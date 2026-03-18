@@ -11,6 +11,7 @@ import { motion } from "framer-motion";
 import SafeImage from "@/components/SafeImage";
 import Link from "next/link";
 import { orderService } from "@/api";
+import PhoneLogin from "@/components/PhoneLogin";
 
 const PAYMENT_OPTIONS = [
     { id: "cod", label: "Cash on Delivery", description: "Pay when your order is delivered", icon: Banknote },
@@ -24,7 +25,6 @@ export default function CheckoutPage() {
     const router = useRouter();
 
     useEffect(() => {
-        if (!userInfo) router.replace("/login?redirect=/checkout");
         if (userInfo && cartItems.length === 0) router.replace("/cart");
     }, [userInfo, router, cartItems.length]);
 
@@ -86,16 +86,25 @@ export default function CheckoutPage() {
         <main className="min-h-screen bg-[#fcfcfc]">
             <Header />
 
-            <section className="pt-40 pb-20">
-                <div className="container mx-auto px-6 max-w-5xl">
+            {!userInfo ? (
+                <section className="pt-32 pb-20">
+                    <div className="container mx-auto px-6 max-w-md">
+                        <div className="bg-white p-8 shadow-sm border border-gray-50">
+                            <PhoneLogin onSuccess={() => {}} />
+                        </div>
+                    </div>
+                </section>
+            ) : (
+                <section className="pt-28 pb-12">
+                <div className="container mx-auto px-6 max-w-4xl">
                     {/* Progress Bar */}
-                    <div className="flex justify-center mb-16">
-                        <div className="flex items-center w-full max-w-lg">
+                    <div className="flex justify-center mb-10">
+                        <div className="flex items-center w-full max-w-md">
                             {[1, 2, 3].map((s) => (
                                 <div key={s} className="flex items-center flex-1 last:flex-none">
-                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold uppercase transition-all ${step >= s ? "bg-primary text-white" : "bg-gray-200 text-gray-500"
+                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold uppercase transition-all ${step >= s ? "bg-primary text-white" : "bg-gray-200 text-gray-500"
                                         }`}>
-                                        {step > s ? <Check className="w-5 h-5" /> : s}
+                                        {step > s ? <Check className="w-4 h-4" /> : s}
                                     </div>
                                     {s < 3 && (
                                         <div className={`h-[2px] flex-1 mx-2 ${step > s ? "bg-primary" : "bg-gray-200"}`} />
@@ -105,16 +114,16 @@ export default function CheckoutPage() {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-16">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
                         {/* Main Flow */}
                         <div className="lg:col-span-2">
                             {step === 1 && (
                                 <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-                                    <h2 className="text-2xl font-bold uppercase tracking-widest mb-8 flex items-center space-x-3">
-                                        <Truck className="w-6 h-6" />
+                                    <h2 className="text-xl font-bold uppercase tracking-widest mb-6 flex items-center space-x-3">
+                                        <Truck className="w-5 h-5" />
                                         <span>Shipping Address</span>
                                     </h2>
-                                    <form onSubmit={handleNext} className="space-y-6 bg-white p-8 shadow-sm">
+                                    <form onSubmit={handleNext} className="space-y-5 bg-white p-6 shadow-sm border border-gray-50">
                                         <div className="space-y-2">
                                             <label className="text-[10px] uppercase tracking-widest font-bold">Address</label>
                                             <input
@@ -160,11 +169,11 @@ export default function CheckoutPage() {
 
                             {step === 2 && (
                                 <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-                                    <h2 className="text-2xl font-bold uppercase tracking-widest mb-8 flex items-center space-x-3">
-                                        <CreditCard className="w-6 h-6" />
+                                    <h2 className="text-xl font-bold uppercase tracking-widest mb-6 flex items-center space-x-3">
+                                        <CreditCard className="w-5 h-5" />
                                         <span>Payment Method</span>
                                     </h2>
-                                    <div className="bg-white p-8 shadow-sm space-y-6">
+                                    <div className="bg-white p-6 shadow-sm border border-gray-50 space-y-5">
                                         {PAYMENT_OPTIONS.map((opt) => {
                                             const Icon = opt.icon;
                                             const isSelected = paymentMethod === opt.id;
@@ -173,7 +182,7 @@ export default function CheckoutPage() {
                                                     key={opt.id}
                                                     type="button"
                                                     onClick={() => savePaymentMethod(opt.id)}
-                                                    className={`w-full p-6 border-2 rounded-lg flex items-center justify-between text-left transition-all ${isSelected ? "border-primary bg-primary/5" : "border-gray-200 hover:border-gray-300"}`}
+                                                    className={`w-full p-4 border-2 rounded-lg flex items-center justify-between text-left transition-all ${isSelected ? "border-primary bg-primary/5" : "border-gray-200 hover:border-gray-300"}`}
                                                 >
                                                     <div className="flex items-center space-x-4">
                                                         <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${isSelected ? "border-primary bg-primary" : "border-gray-300"}`}>
@@ -202,12 +211,12 @@ export default function CheckoutPage() {
 
                             {step === 3 && (
                                 <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-                                    <h2 className="text-2xl font-bold uppercase tracking-widest mb-8 flex items-center space-x-3">
-                                        <ShieldCheck className="w-6 h-6" />
+                                    <h2 className="text-xl font-bold uppercase tracking-widest mb-6 flex items-center space-x-3">
+                                        <ShieldCheck className="w-5 h-5" />
                                         <span>Review & Confirm</span>
                                     </h2>
-                                    <div className="bg-white p-8 shadow-sm space-y-10">
-                                        <div className="grid md:grid-cols-2 gap-10 border-b border-gray-100 pb-10">
+                                    <div className="bg-white p-6 shadow-sm border border-gray-50 space-y-8">
+                                        <div className="grid md:grid-cols-2 gap-8 border-b border-gray-100 pb-8">
                                             <div>
                                                 <h3 className="text-[10px] uppercase tracking-widest font-bold text-gray-400 mb-4">Shipping To</h3>
                                                 <p className="text-sm font-bold">{userInfo?.name || "Guest"}</p>
@@ -237,9 +246,9 @@ export default function CheckoutPage() {
                                         <button
                                             onClick={handlePlaceOrder}
                                             disabled={loading}
-                                            className="btn-primary w-full h-16 text-lg flex items-center justify-center space-x-2"
+                                            className="btn-primary w-full h-14 text-base flex items-center justify-center space-x-2"
                                         >
-                                            {loading && <Loader2 className="w-5 h-5 animate-spin" />}
+                                            {loading && <Loader2 className="w-4 h-4 animate-spin" />}
                                             <span>{loading ? "Processing..." : paymentMethod === "cod" ? "Place Order" : "Place Order (Razorpay)"}</span>
                                         </button>
                                     </div>
@@ -248,9 +257,9 @@ export default function CheckoutPage() {
                         </div>
 
                         {/* Sidebar Summary */}
-                        <div className="h-fit sticky top-32">
-                            <div className="bg-white p-8 shadow-sm">
-                                <h3 className="text-sm font-bold uppercase tracking-widest border-b border-gray-100 pb-4 mb-6">In Your Bag</h3>
+                        <div className="h-fit sticky top-28">
+                            <div className="bg-white p-6 shadow-sm border border-gray-50">
+                                <h3 className="text-xs font-bold uppercase tracking-widest border-b border-gray-100 pb-3 mb-5">In Your Bag</h3>
                                 <div className="space-y-4 mb-8">
                                     {cartItems.map((item, index) => (
                                         <div key={`${item._id}-${item.size ?? ""}-${item.color ?? ""}-${index}`} className="flex space-x-4">
@@ -279,7 +288,8 @@ export default function CheckoutPage() {
                         </div>
                     </div>
                 </div>
-            </section>
+                </section>
+            )}
 
             <Footer />
         </main>

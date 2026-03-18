@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { ShoppingBag, User, Search, Menu, X, ChevronDown, LogOut, UserCircle } from "lucide-react";
+import { ShoppingBag, User, Search, Menu, X, ChevronDown, LogOut, UserCircle, Heart } from "lucide-react";
 import { useCartStore } from "@/store/useCartStore";
 import { useAuthStore } from "@/store/useAuthStore";
+import { useWishlistStore } from "@/store/useWishlistStore";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePathname } from "next/navigation";
 import CartDrawer from "@/components/CartDrawer";
@@ -15,10 +16,14 @@ export default function Header() {
     const isHome = pathname === "/";
     const isProductDetail = pathname?.startsWith("/product/");
     const isCartPage = pathname === "/cart";
+    const isWishlistPage = pathname === "/wishlist";
+    const isCheckoutPage = pathname === "/checkout";
+    const isOrderPage = pathname?.startsWith("/order/");
+    const isLoginPage = pathname === "/login";
     const [isScrolled, setIsScrolled] = useState(false);
     const [isCartOpen, setIsCartOpen] = useState(false);
-    // Solid nav on scroll, product detail, or cart so navbar is visible on light content
-    const navSolid = isScrolled || isProductDetail || isCartPage;
+    // Solid nav on scroll, product detail, checkout, order, cart or login so navbar is visible on light content
+    const navSolid = isScrolled || isProductDetail || isCartPage || isWishlistPage || isCheckoutPage || isOrderPage || isLoginPage;
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -27,6 +32,7 @@ export default function Header() {
     const router = useRouter();
     const { cartItems } = useCartStore();
     const { userInfo, logout } = useAuthStore();
+    const { wishlistItems } = useWishlistStore();
 
     useEffect(() => {
         const handleClickOutside = (e) => {
@@ -87,19 +93,30 @@ export default function Header() {
                         <Search className="w-5 h-5" />
                     </button>
 
+                    {userInfo && (
+                        <Link
+                            href="/wishlist"
+                            className={`relative hidden sm:flex items-center ${navSolid ? "text-primary" : "text-white"}`}
+                            aria-label="Wishlist"
+                        >
+                            <Heart className="w-5 h-5" />
+                            {wishlistItems.length > 0 && (
+                                <span className="absolute -top-2 -right-2 bg-red-500 text-[10px] font-bold text-white w-4 h-4 rounded-full flex items-center justify-center">
+                                    {wishlistItems.length}
+                                </span>
+                            )}
+                        </Link>
+                    )}
+
                     <div className="relative" ref={userMenuRef}>
                         {userInfo ? (
                             <>
                                 <button
                                     type="button"
                                     onClick={(e) => { e.stopPropagation(); setIsUserMenuOpen((v) => !v); }}
-                                    className={`flex items-center gap-1.5 ${navSolid ? "text-primary" : "text-white"} hover:opacity-90 transition`}
+                                    className={`${navSolid ? "text-primary" : "text-white"} hover:opacity-90 transition`}
                                 >
-                                    <User className="w-5 h-5 shrink-0" />
-                                    <span className="text-xs font-semibold uppercase tracking-wider max-w-[100px] truncate hidden sm:inline">
-                                        {userInfo.name || userInfo.email?.split("@")[0] || "Account"}
-                                    </span>
-                                    <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${isUserMenuOpen ? "rotate-180" : ""}`} />
+                                    <User className="w-5 h-5" />
                                 </button>
                                 <AnimatePresence>
                                     {isUserMenuOpen && (
@@ -200,47 +217,58 @@ export default function Header() {
                     </motion.div>
                 )}
             </AnimatePresence>
-            {/* Search Modal Overlay */}
+            {/* Integrated Search Bar (Mockup Style) */}
             <AnimatePresence>
                 {isSearchOpen && (
                     <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-white/95 z-[70] flex flex-col items-center pt-40 px-6"
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        className="absolute inset-x-0 top-full bg-white border-b border-gray-100 py-4 px-6 z-[60] shadow-sm"
                     >
-                        <button
-                            onClick={() => setIsSearchOpen(false)}
-                            className="absolute top-10 right-10 p-2 hover:rotate-90 transition-transform"
-                        >
-                            <X className="w-8 h-8" />
-                        </button>
-
-                        <div className="w-full max-w-3xl">
-                            <p className="text-[10px] uppercase tracking-[0.4em] text-gray-400 font-bold mb-8 text-center">Search hijabs, scarves & more</p>
-                            <div className="relative border-b-2 border-primary pb-4">
+                        <div className="container mx-auto max-w-4xl relative">
+                            <div className="relative group">
+                                <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                                    <Search className="w-5 h-5 text-gray-400 group-focus-within:text-primary transition-colors" />
+                                </div>
                                 <input
                                     autoFocus
                                     type="text"
-                                    placeholder="Search hijabs, scarves..."
-                                    className="w-full bg-transparent text-3xl md:text-5xl font-bold uppercase tracking-tight focus:outline-none placeholder:text-gray-100"
+                                    placeholder="Search for products, brands and more"
+                                    className="w-full bg-gray-50 border-none rounded-xl py-3.5 pl-12 pr-12 text-sm font-medium tracking-wide focus:ring-2 focus:ring-primary/5 focus:bg-white transition-all placeholder:text-gray-400"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter" && searchQuery) {
+                                            router.push(`/shop?search=${searchQuery}`);
+                                            setIsSearchOpen(false);
+                                        }
+                                    }}
                                 />
-                                <Search className="absolute right-0 top-1/2 -translate-y-1/2 w-8 h-8 text-gray-200" />
+                                <button 
+                                    onClick={() => {
+                                        setIsSearchOpen(false);
+                                        setSearchQuery("");
+                                    }}
+                                    className="absolute inset-y-0 right-4 flex items-center text-gray-400 hover:text-primary transition-colors"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
                             </div>
-
+                            
                             {searchQuery && (
-                                <div className="mt-12 text-center">
-                                    <p className="text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-10">Searching for "{searchQuery}"</p>
-                                    {/* Real search labels/results would map here */}
-                                    <Link
-                                        href={`/shop?search=${searchQuery}`}
-                                        className="btn-primary"
-                                        onClick={() => setIsSearchOpen(false)}
-                                    >
-                                        View All Results
-                                    </Link>
+                                <div className="absolute top-full left-0 w-full bg-white mt-1 rounded-xl shadow-2xl border border-gray-100 overflow-hidden z-[70]">
+                                    <div className="p-4 border-b border-gray-50 flex justify-between items-center">
+                                        <span className="text-[10px] uppercase tracking-widest text-gray-400 font-bold">Quick Results for "{searchQuery}"</span>
+                                        <Link 
+                                            href={`/shop?search=${searchQuery}`}
+                                            className="text-[10px] uppercase tracking-widest font-bold text-accent hover:underline"
+                                            onClick={() => setIsSearchOpen(false)}
+                                        >
+                                            View All
+                                        </Link>
+                                    </div>
+                                    {/* Quick result items would go here */}
                                 </div>
                             )}
                         </div>

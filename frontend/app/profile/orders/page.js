@@ -15,11 +15,13 @@ import Link from "next/link";
 import SafeImage from "@/components/SafeImage";
 
 const STATUS_ICONS = {
-    "Pending": { icon: Clock, color: "text-amber-500", bg: "bg-amber-50" },
-    "Processing": { icon: Truck, color: "text-blue-500", bg: "bg-blue-50" },
-    "Shipped": { icon: Truck, color: "text-purple-500", bg: "bg-purple-50" },
-    "Delivered": { icon: CheckCircle, color: "text-emerald-500", bg: "bg-emerald-50" },
-    "Cancelled": { icon: XCircle, color: "text-red-500", bg: "bg-red-50" },
+    "order placed": { icon: Clock, color: "text-amber-500", bg: "bg-amber-50" },
+    "shipped": { icon: Truck, color: "text-purple-500", bg: "bg-purple-50" },
+    "out for delivery": { icon: Truck, color: "text-blue-500", bg: "bg-blue-50" },
+    "delivered": { icon: CheckCircle, color: "text-emerald-500", bg: "bg-emerald-50" },
+    "cancelled": { icon: XCircle, color: "text-red-500", bg: "bg-red-50" },
+    "return requested": { icon: Clock, color: "text-amber-600", bg: "bg-amber-50" },
+    "returned": { icon: Clock, color: "text-gray-500", bg: "bg-gray-50" },
 };
 
 export default function MyOrdersPage() {
@@ -30,7 +32,7 @@ export default function MyOrdersPage() {
         const fetchOrders = async () => {
             try {
                 const data = await orderService.getMyOrders();
-                setOrders(data);
+                setOrders(Array.isArray(data) ? data : []);
             } catch (error) {
                 console.error("Error fetching orders:", error);
             } finally {
@@ -55,10 +57,13 @@ export default function MyOrdersPage() {
             ) : (
                 <div className="space-y-6">
                     {orders.map((order) => {
-                        const status = order.orderStatus || "Pending";
-                        const StatusIcon = STATUS_ICONS[status]?.icon || Clock;
-                        const statusColor = STATUS_ICONS[status]?.color || "text-gray-400";
-                        const statusBg = STATUS_ICONS[status]?.bg || "bg-gray-50";
+                        const status = order.orderStatus || order.status || "order placed";
+                        const config = STATUS_ICONS[status] || STATUS_ICONS["order placed"];
+                        const StatusIcon = config.icon;
+                        const statusColor = config.color;
+                        const statusBg = config.bg;
+                        const items = order.orderItems || order.items || [];
+                        const price = order.totalPrice || order.finalPrice || 0;
 
                         return (
                             <div 
@@ -77,26 +82,26 @@ export default function MyOrdersPage() {
                                         </div>
                                         
                                         <div className="flex flex-wrap gap-3 mb-4">
-                                            {(order.orderItems || []).slice(0, 4).map((item, idx) => (
+                                            {items.slice(0, 4).map((item, idx) => (
                                                 <div key={idx} className="relative w-12 h-16 bg-gray-50 border border-gray-50">
                                                     <SafeImage src={item.image} alt="product" fill className="object-cover" />
                                                 </div>
                                             ))}
-                                            {(order.orderItems || []).length > 4 && (
+                                            {items.length > 4 && (
                                                 <div className="w-12 h-16 bg-gray-50 flex items-center justify-center text-[10px] font-bold text-gray-400 border border-gray-50">
-                                                    +{(order.orderItems || []).length - 4}
+                                                    +{items.length - 4}
                                                 </div>
                                             )}
                                         </div>
                                         
                                         <p className="text-[10px] text-gray-400 uppercase tracking-widest font-bold truncate max-w-sm">
-                                            {(order.orderItems || []).map(i => i.name).join(", ")}
+                                            {items.map(i => i.name).join(", ")}
                                         </p>
                                     </div>
 
                                     <div className="flex flex-col md:items-end gap-4 w-full md:w-auto pt-4 md:pt-0 border-t md:border-t-0 border-gray-50">
                                         <div className="text-xl font-black uppercase tracking-tight text-primary">
-                                            ₹{order.totalPrice?.toFixed(2)}
+                                            ₹{Number(price).toFixed(2)}
                                         </div>
                                         
                                         <div className="flex items-center space-x-4">

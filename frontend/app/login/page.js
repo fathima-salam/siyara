@@ -1,75 +1,37 @@
 "use client";
 
 import { useState } from "react";
-import { useAuthStore } from "@/store/useAuthStore";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { Lock, Mail, ArrowRight, User } from "lucide-react";
 import { motion } from "framer-motion";
-import { authService } from "@/api";
+import PhoneLogin from "@/components/PhoneLogin";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  const setUserInfo = useAuthStore((state) => state.setUserInfo);
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect");
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
-    try {
-      const data = await authService.login(email, password);
-      setUserInfo({
-        _id: data._id,
-        name: data.name,
-        email: data.email,
-        isAdmin: data.isAdmin,
-        token: data.token,
-      });
-      const path = redirectTo && typeof redirectTo === "string" && redirectTo.startsWith("/") && !redirectTo.startsWith("//")
-        ? redirectTo
-        : "/";
-      router.push(path);
-    } catch (err) {
-      setError(
-        err.response?.data?.message || err.message || "Invalid email or password."
-      );
-    } finally {
-      setLoading(false);
-    }
+  const onPhoneSuccess = (data) => {
+    const path = redirectTo && typeof redirectTo === "string" && redirectTo.startsWith("/") && !redirectTo.startsWith("//")
+      ? redirectTo
+      : "/";
+    router.push(path);
   };
 
   return (
     <main className="min-h-screen bg-white">
       <Header />
-      <section className="pt-28 pb-20 px-4 bg-secondary/30">
-        <div className="container mx-auto max-w-md">
+      <section className="pt-32 pb-20 px-4 bg-secondary/30 flex items-center justify-center min-h-[85vh]">
+        <div className="w-full max-w-[400px]">
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className="bg-white border border-gray-200 shadow-sm p-8 md:p-10"
+            className="bg-white p-10 shadow-sm border border-gray-100 rounded-sm"
           >
-            <div className="text-center mb-8">
-              <p className="text-[10px] uppercase tracking-[0.3em] font-bold text-accent mb-3">
-                Welcome back
-              </p>
-              <h1 className="text-2xl md:text-3xl font-bold uppercase tracking-tight text-primary mb-1">
-                Sign in
-              </h1>
-              <p className="text-xs text-gray-500 uppercase tracking-wider">
-                Siyara Hijab Store
-              </p>
-            </div>
-
             {error && (
               <motion.div
                 initial={{ opacity: 0 }}
@@ -80,73 +42,14 @@ export default function LoginPage() {
               </motion.div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div>
-                <label className="block text-[10px] uppercase tracking-wider font-bold text-primary mb-1.5">
-                  Email
-                </label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    type="email"
-                    required
-                    placeholder="you@example.com"
-                    className="w-full border border-gray-200 pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors bg-secondary/30"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-[10px] uppercase tracking-wider font-bold text-primary mb-1.5">
-                  Password
-                </label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    type="password"
-                    required
-                    placeholder="••••••••"
-                    className="w-full border border-gray-200 pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors bg-secondary/30"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="btn-primary w-full flex items-center justify-center gap-2 py-3.5 disabled:opacity-60"
-              >
-                {loading ? (
-                  <span className="uppercase tracking-widest">Signing in...</span>
-                ) : (
-                  <>
-                    <span className="uppercase tracking-widest">Sign in</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </>
-                )}
-              </button>
-            </form>
-
-            <div className="mt-8 pt-6 border-t border-gray-100 text-center">
-              <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">
-                New to Siyara?
-              </p>
-              <Link
-                href="/signup"
-                className="inline-flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-widest hover:text-accent transition-colors"
-              >
-                <User className="w-4 h-4" />
-                Create an account
-              </Link>
+            <div className="mt-4">
+              <PhoneLogin onSuccess={onPhoneSuccess} />
             </div>
 
-            <div className="mt-6 text-center">
+            <div className="mt-12 text-center">
               <Link
                 href="/"
-                className="text-[10px] text-gray-400 uppercase tracking-widest hover:text-primary transition-colors"
+                className="text-[12px] text-gray-400 uppercase tracking-[0.2em] font-bold hover:text-primary transition-colors"
               >
                 ← Back to store
               </Link>
